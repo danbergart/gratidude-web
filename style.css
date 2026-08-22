@@ -45,13 +45,13 @@ html, body {
 }
 
 @media (min-width: 900px) {
-  .col { max-width: 740px; }
+  .col { max-width: min(90vw, 960px); }
   .msg-ai { font-size: 24px; }
-  .chat-chrome { padding: 20px 32px 14px; }
-  .thread { padding: 28px 32px 8px; gap: 20px; }
-  .composer { padding: 16px 32px 28px; }
-  .done-footer { padding: 20px 32px 32px; }
-  .signup-panel { padding: 32px 32px 48px; }
+  .chat-chrome { padding: 20px 40px 14px; }
+  .thread { padding: 28px 40px 8px; gap: 20px; }
+  .composer { padding: 16px 40px 28px; }
+  .done-footer { padding: 20px 40px 32px; }
+  .signup-panel { padding: 32px 40px 48px; max-width: min(90vw, 960px); }
 }
 
 /* ── Screen visibility ── */
