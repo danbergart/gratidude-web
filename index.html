@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Gratidude</title>
+  <meta name="description" content="Three things you're grateful for. Every day.">
+  <meta name="theme-color" content="#1c1c1e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="col">
+
+    <!-- Chat (always the main screen) -->
+    <div id="screen-chat" class="screen active">
+      <header class="chat-chrome">
+        <span class="wordmark-s">Gratidude</span>
+        <span id="chrome-meta" class="streak-counter"></span>
+        <button class="menu-btn" id="menu-btn" aria-label="Menu" style="display:none">≡</button>
+      </header>
+
+      <div id="thread" class="thread" role="log" aria-live="polite"></div>
+
+      <div id="composer" class="composer">
+        <textarea
+          id="chat-input"
+          placeholder="write three things…"
+          rows="1"
+          aria-label="Your gratitudes"
+        ></textarea>
+        <button class="slab-btn" id="send-btn" disabled>Send</button>
+      </div>
+
+      <div id="done-footer" class="done-footer" style="display:none">
+        <span class="see-you">see you tomorrow</span>
+        <span class="done-tag">▌ done</span>
+      </div>
+    </div>
+
+    <!-- Sign-up prompt (overlays bottom of chat after day 1) -->
+    <div id="signup-panel" class="signup-panel" style="display:none">
+      <div id="signup-view-prompt" class="signup-view">
+        <p class="signup-heading">One down.</p>
+        <p class="signup-sub">Enter your email to keep your streak.</p>
+        <div class="field">
+          <input
+            type="email"
+            id="signup-email"
+            autocomplete="email"
+            placeholder="your@email.com"
+            inputmode="email"
+          >
+          <div class="field-error" id="signup-error"></div>
+        </div>
+        <button class="slab-btn" id="signup-btn" disabled>Keep my streak.</button>
+        <p class="signup-skip" id="skip-signup">not now</p>
+      </div>
+      <div id="signup-view-sent" class="signup-view" style="display:none">
+        <p class="signup-heading">Check your email.</p>
+        <p class="signup-sub">I've sent you a link. Click it to come back in.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
