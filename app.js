@@ -12,6 +12,7 @@ let anonId      = null; // UUID for anonymous users
 let userState   = { day: 1, streak: 0, grats_today: 0 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
+const chatScreen   = document.getElementById('screen-chat');
 const thread       = document.getElementById('thread');
 const inputEl      = document.getElementById('chat-input');
 const sendBtn      = document.getElementById('send-btn');
@@ -191,6 +192,7 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
+  chatScreen.classList.remove('opening');
   inputEl.value = '';
   inputEl.style.height = 'auto';
   sendBtn.disabled = true;
@@ -247,6 +249,7 @@ inputEl.addEventListener('keydown', (e) => {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function init() {
+  chatScreen.classList.add('opening');
   anonId = getOrCreateAnonId();
 
   // Check for existing session (magic link return or returning signed-up user)
@@ -280,6 +283,7 @@ async function init() {
   if (initData?.userState) updateChrome(initData.userState);
 
   if (initData?.done) {
+    chatScreen.classList.remove('opening');
     const streakNote = userState.streak > 1 ? ` ${userState.streak} days.` : '';
     appendAI(`Done for today.${streakNote} See you tomorrow.`);
     showDoneState();

@@ -151,6 +151,39 @@ html, body {
   scroll-behavior: smooth;
 }
 
+/* ── Opening state: centred, Google-start-page feel ── */
+#screen-chat.opening .thread {
+  justify-content: flex-end;
+  padding-bottom: 28px;
+}
+
+#screen-chat.opening .composer {
+  border-top: none;
+  padding-top: 0;
+}
+
+#screen-chat.opening .chat-chrome {
+  border-bottom: none;
+}
+
+/* Push the whole centred block toward the middle of the viewport */
+#screen-chat.opening .thread::before {
+  content: '';
+  flex: 1.4;
+}
+
+#screen-chat.opening .msg-ai {
+  max-width: 100%;
+}
+
+#screen-chat.opening .msg-ai:first-child {
+  font-size: 30px;
+}
+
+@media (min-width: 900px) {
+  #screen-chat.opening .msg-ai:first-child { font-size: 38px; }
+}
+
 /* AI message */
 .msg-ai {
   max-width: 88%;
