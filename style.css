@@ -29,7 +29,7 @@ html, body {
 .col {
   position: relative;
   width: 100%;
-  max-width: 520px;
+  max-width: 600px;
   min-height: 100dvh;
   margin: 0 auto;
   background: var(--bg);
@@ -37,11 +37,21 @@ html, body {
   flex-direction: column;
 }
 
-@media (min-width: 560px) {
+@media (min-width: 640px) {
   .col {
     border-left: 1px solid var(--borderSoft);
     border-right: 1px solid var(--borderSoft);
   }
+}
+
+@media (min-width: 900px) {
+  .col { max-width: 740px; }
+  .msg-ai { font-size: 24px; }
+  .chat-chrome { padding: 20px 32px 14px; }
+  .thread { padding: 28px 32px 8px; gap: 20px; }
+  .composer { padding: 16px 32px 28px; }
+  .done-footer { padding: 20px 32px 32px; }
+  .signup-panel { padding: 32px 32px 48px; }
 }
 
 /* ── Screen visibility ── */
