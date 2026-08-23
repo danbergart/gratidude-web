@@ -5,68 +5,194 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Gratidude</title>
   <meta name="description" content="Three things you're grateful for. Every day.">
-  <meta name="theme-color" content="#1c1c1e">
+  <meta name="theme-color" content="#fbfaf7">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="col">
 
-    <!-- Chat (always the main screen) -->
-    <div id="screen-chat" class="screen active">
-      <header class="chat-chrome">
-        <span class="wordmark-s">Gratidude</span>
-        <span id="chrome-meta" class="streak-counter"></span>
-        <button class="menu-btn" id="menu-btn" aria-label="Menu" style="display:none">≡</button>
-      </header>
-
-      <div id="thread" class="thread" role="log" aria-live="polite"></div>
-
-      <div id="composer" class="composer">
-        <textarea
-          id="chat-input"
-          placeholder="write three things…"
-          rows="1"
-          aria-label="Your gratitudes"
-        ></textarea>
-        <button class="slab-btn" id="send-btn" disabled>Send</button>
-      </div>
-
-      <div id="done-footer" class="done-footer" style="display:none">
-        <span class="see-you">see you tomorrow</span>
-        <span class="done-tag">▌ done</span>
-      </div>
-    </div>
-
-    <!-- Sign-up prompt (overlays bottom of chat after day 1) -->
-    <div id="signup-panel" class="signup-panel" style="display:none">
-      <div id="signup-view-prompt" class="signup-view">
-        <p class="signup-heading">One down.</p>
-        <p class="signup-sub">Enter your email to keep your streak.</p>
+<!-- ══════════ ONBOARDING ══════════ -->
+<section class="screen" id="screen-onboarding">
+  <div class="top ob-top">
+    <span class="mark">Gratidude</span>
+    <div class="dots" id="ob-dots"></div>
+  </div>
+  <div class="stage">
+    <div class="mid">
+      <section class="step on" data-s="0">
+        <h1>Three things.<br>Every day.</h1>
+        <div class="rule"></div>
+        <p class="sub">Everything else lives in the menu.</p>
+      </section>
+      <section class="step" data-s="1">
+        <h1 class="up">What's your favourite sports team?</h1>
         <div class="field">
-          <input
-            type="email"
-            id="signup-email"
-            autocomplete="email"
-            placeholder="your@email.com"
-            inputmode="email"
-          >
-          <div class="field-error" id="signup-error"></div>
+          <label class="smallcaps" for="ob-team">team</label>
+          <input id="ob-team" placeholder="go on, admit it" autocomplete="off">
+          <span class="hint">I'll use this against you</span>
         </div>
-        <button class="slab-btn" id="signup-btn" disabled>Keep my streak.</button>
-        <p class="signup-skip" id="skip-signup">not now</p>
-      </div>
-      <div id="signup-view-sent" class="signup-view" style="display:none">
-        <p class="signup-heading">Check your email.</p>
-        <p class="signup-sub">I've sent you a link. Click it to come back in.</p>
-      </div>
+      </section>
+      <section class="step" data-s="2">
+        <h1 class="up">Have you done this before?</h1>
+        <p class="sub sub-tight">Pick whatever fits. This sets how I talk to you - you can change it any time.</p>
+        <div class="cards" id="ob-levels"></div>
+      </section>
+      <section class="step" data-s="3">
+        <h1 class="up">Meet your guide.</h1>
+        <p class="sub sub-tight">Choose my personality. Change it whenever you like.</p>
+        <div class="cards" id="ob-pers"></div>
+      </section>
+      <section class="step" data-s="4">
+        <h1 class="up">Double your chances.</h1>
+        <p class="sub sub-tight">Let me nudge you once a day and you're twice as likely to keep this up. Pick a time.</p>
+        <div class="times" id="ob-times"></div>
+        <p class="note">I'll nudge you once. If you ignore me, that's on you.</p>
+      </section>
     </div>
+    <div class="foot">
+      <button class="slab" id="ob-next">Start.</button>
+      <button class="skip" id="ob-skip" hidden>Not now</button>
+    </div>
+  </div>
+</section>
 
+<!-- ══════════ CHAT ══════════ -->
+<section class="screen" id="screen-chat">
+  <div class="chrome">
+    <span class="mark">Gratidude</span>
+    <div class="right">
+      <span class="streak" id="streak-meta"></span>
+      <button class="ico" type="button" id="go-journal" aria-label="Journal">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
+      </button>
+      <button class="link" type="button" id="go-menu">Menu</button>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js"></script>
+  <div class="thread wrap" id="thread" role="log" aria-live="polite"></div>
+
+  <div class="composer" id="composer">
+    <div class="wrap">
+      <textarea id="chat-input" rows="3" placeholder="type three things…" aria-label="Your gratitudes"></textarea>
+      <div class="row">
+        <span class="hint">⌘ + enter to send</span>
+        <button class="slab" id="send-btn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footbar" id="done-footer" hidden>
+    <div class="wrap">
+      <span class="bye">see you tomorrow</span>
+      <span class="done smallcaps">▌ done</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ JOURNAL ══════════ -->
+<section class="screen" id="screen-journal">
+  <div class="top">
+    <span class="mark">Gratidude</span>
+    <div class="right">
+      <button class="link" type="button" data-go="chat">Chat</button>
+      <button class="ico on" type="button" aria-label="Journal">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
+      </button>
+      <button class="link" type="button" data-go="menu">Menu</button>
+    </div>
+  </div>
+  <div class="jbody">
+    <div class="cal">
+      <div class="monthbar">
+        <h1 id="j-month">August</h1>
+        <div class="nav">
+          <button type="button" id="j-prev" aria-label="Previous month">←</button>
+          <button type="button" id="j-next" aria-label="Next month" disabled>→</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat hot"><b id="j-streak">0</b><span class="k">streak</span></div>
+        <div class="stat"><b id="j-month-count">0</b><span class="k">this month</span></div>
+        <div class="stat"><b id="j-all">0</b><span class="k">all time</span></div>
+      </div>
+      <div class="dow"><span>m</span><span>t</span><span>w</span><span>t</span><span>f</span><span>s</span><span>s</span></div>
+      <div class="grid" id="j-grid"></div>
+    </div>
+    <div class="entry">
+      <div class="date"><span class="d" id="j-date"></span><span class="hint" id="j-meta"></span></div>
+      <div id="j-entry-body"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ MENU ══════════ -->
+<section class="screen" id="screen-menu">
+  <div class="top">
+    <span class="mark">Gratidude</span>
+    <div class="right">
+      <button class="link" type="button" data-go="chat">Chat</button>
+      <button class="ico" type="button" data-go="journal" aria-label="Journal">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="pane index on" id="menu-index">
+      <h1 class="big">Menu</h1>
+      <p class="lede">Everything that isn't the conversation lives here.</p>
+
+      <div class="sect hot">the conversation</div>
+      <div class="rows">
+        <button class="row" data-open="personality"><span class="lab">Personality</span><span class="val"><em id="v-personality"></em><span class="chev">›</span></span></button>
+        <button class="row" data-open="level"><span class="lab">Level</span><span class="val"><em id="v-level"></em><span class="chev">›</span></span></button>
+        <button class="row" data-open="sounds"><span class="lab">Sounds</span><span class="val"><em id="v-sounds"></em><span class="chev">›</span></span></button>
+      </div>
+
+      <div class="sect">habit</div>
+      <div class="rows">
+        <button class="row" data-open="notifications"><span class="lab">Notifications</span><span class="val"><em id="v-notif"></em><span class="chev">›</span></span></button>
+      </div>
+
+      <div class="sect">account</div>
+      <div class="rows">
+        <button class="row" data-open="profile"><span class="lab">Profile</span><span class="val"><em id="v-profile"></em><span class="chev">›</span></span></button>
+      </div>
+
+      <div class="sect">elsewhere</div>
+      <div class="rows">
+        <button class="row" data-open="about"><span class="lab">About</span><span class="val"><span class="chev">›</span></span></button>
+        <button class="row" data-open="feedback"><span class="lab">Send feedback</span><span class="val"><span class="chev">›</span></span></button>
+        <button class="row" data-open="help"><span class="lab">Help</span><span class="val"><span class="chev">›</span></span></button>
+      </div>
+    </div>
+    <div class="pane detail" id="menu-detail"></div>
+  </div>
+</section>
+
+<!-- ══════════ SIGN-UP PANEL ══════════ -->
+<div id="signup-panel" class="signup-panel" hidden>
+  <div class="wrap">
+    <div id="signup-view-prompt">
+      <p class="signup-heading" id="signup-heading">One down.</p>
+      <p class="signup-sub">Enter your email to keep your streak.</p>
+      <div class="field">
+        <label class="smallcaps" for="signup-email">email</label>
+        <input type="email" id="signup-email" autocomplete="email" placeholder="you@example.com" inputmode="email">
+        <div class="field-error" id="signup-error"></div>
+      </div>
+      <button class="slab full" id="signup-btn" disabled>Keep my streak.</button>
+      <div class="linkrow"><button type="button" class="skip" id="skip-signup">not now</button></div>
+    </div>
+    <div id="signup-view-sent" hidden>
+      <p class="signup-heading">Check your email.</p>
+      <p class="signup-sub">I've sent you a link. Click it to come back in.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
