@@ -30,7 +30,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
 let authSession = null;
 let anonId = null;
 let userState = { day: 1, streak: 0, grats_today: 0 };
-let settings = { personality: 0, level: 1, team: '', displayName: '', sounds: true, notifEnabled: false, reminderTime: '8:00 pm', onboarded: false };
+let settings = { personality: 0, level: 1, team: '', displayName: '', sounds: true, notifEnabled: false, reminderTime: '8:00 pm' };
 let journal = { entries: {}, since: null, stats: { streak: 0, allTime: 0 } };
 let journalLoaded = false;
 let viewMonth = new Date();
@@ -42,12 +42,12 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // ── Screen routing ──────────────────────────────────────────────────────────
-const SCREENS = ['onboarding', 'chat', 'journal', 'menu'];
+const SCREENS = ['chat', 'journal', 'menu'];
 
 function show(name) {
   SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('on', s === name));
   // The rotator can only measure itself once its screen is actually on.
-  setRotator(name === 'onboarding' && obStep === 0);
+  setRotator(name === 'chat' && chatScreen.classList.contains('opening'));
   window.scrollTo(0, 0);
   if (name === 'journal') loadJournal();
 }
@@ -101,27 +101,19 @@ function tick() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ONBOARDING
+   SHARED PICKER MARKUP
 ══════════════════════════════════════════════════════════════ */
-const obPick = { level: 1, pers: 0, time: '8:00 pm' };
-let obStep = 0;
-
 const cardMarkup = (list, sel, key) => list.map(([nm, ex], i) =>
   `<button class="card${i === sel ? ' chosen' : ''}" data-pick="${key}" data-i="${i}">
-     <span class="hd"><span class="nm">${esc(nm)}</span><span class="tag">▌ chosen</span></span>
+     <span class="hd"><span class="nm">${esc(nm)}</span><span class="tag">chosen</span></span>
      <p class="ex">${esc(ex)}</p>
    </button>`).join('');
 
-function drawOnboarding() {
-  $('ob-levels').innerHTML = cardMarkup(LEVELS, obPick.level, 'ob-level');
-  $('ob-pers').innerHTML = cardMarkup(PERSONALITIES, obPick.pers, 'ob-pers');
-  $('ob-times').innerHTML = TIMES.map((t) =>
-    `<button class="time${t === obPick.time ? ' on' : ''}" data-obtime="${t}">${t}</button>`).join('');
-}
-
-// The welcome tagline: one word swaps for the next, dropping in from above.
+/* ══════════════════════════════════════════════════════════════
+   ROTATING TAGLINE
+══════════════════════════════════════════════════════════════ */
 const ROTATE_WORDS = ['guys', 'dudes', 'lads', 'blokes', 'mandem'];
-const rotator = $('ob-rotator');
+const rotator = $('rotator');
 let rotWords = [];
 let rotAt = 0;
 let rotTimer = null;
@@ -156,45 +148,11 @@ function setRotator(on) {
   rotTimer = setInterval(stepRotator, 1800);
 }
 
-const OB_LABELS = ['Start.', 'Next.', 'Next.', 'Next.', 'Turn nudges on.'];
-
-function obGo(n) {
-  if (n > 4) return finishOnboarding();
-  obStep = n;
-  document.querySelectorAll('#screen-onboarding .step').forEach((x) => x.classList.toggle('on', +x.dataset.s === obStep));
-  $('ob-dots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i <= obStep));
-  setRotator(obStep === 0);
-  $('ob-next').textContent = OB_LABELS[obStep];
-  $('ob-skip').hidden = obStep === 0;
-  $('ob-skip').textContent = obStep === 4 ? "I'll risk it" : 'Skip';
-}
-
-async function finishOnboarding(withNudges = true) {
-  const patch = {
-    level: obPick.level,
-    personality: obPick.pers,
-    team: $('ob-team').value.trim(),
-    reminderTime: obPick.time,
-    notifEnabled: withNudges,
-    onboarded: true,
-  };
-  show('chat');
-  startChat();
-  saveSettings(patch);
-}
-
-$('ob-dots').innerHTML = '<i class="on"></i>' + '<i></i>'.repeat(4);
-drawOnboarding();
 drawRotator();
 document.fonts?.ready.then(sizeRotator);
-$('ob-next').addEventListener('click', () => obGo(obStep + 1));
-$('ob-skip').addEventListener('click', () => {
-  if (obStep === 4) return finishOnboarding(false);
-  obGo(obStep + 1);
-});
 
 /* ══════════════════════════════════════════════════════════════
-   CHAT
+   HOME
 ══════════════════════════════════════════════════════════════ */
 const chatScreen = $('screen-chat');
 const thread = $('thread');
@@ -202,12 +160,12 @@ const sendBtn = $('send-btn');
 const composer = $('composer');
 const doneFooter = $('done-footer');
 const lines = [...document.querySelectorAll('#three .tin')];
-const countHint = $('three-count');
+const composerError = $('composer-error');
 
-function appendAI(html, opening = false) {
+function appendAI(html, extra = '') {
   const el = document.createElement('div');
-  el.className = 'ai enter';
-  el.innerHTML = html + (opening ? '<span class="caret"></span>' : '');
+  el.className = `ai enter ${extra}`.trim();
+  el.innerHTML = html;
   thread.appendChild(el);
   scrollThread();
   return el;
@@ -233,6 +191,8 @@ function updateChrome(state) {
 }
 
 function showDoneState() {
+  chatScreen.classList.remove('opening');
+  setRotator(false);
   composer.hidden = true;
   doneFooter.hidden = false;
   thread.querySelectorAll('.user').forEach((u) => u.classList.add('spent'));
@@ -244,8 +204,9 @@ function refreshLines() {
   const vals = readLines();
   lines.forEach((el, i) => el.closest('.tline').classList.toggle('filled', !!vals[i]));
   const n = vals.filter(Boolean).length;
-  countHint.textContent = `${n} of 3`;
+  sendBtn.textContent = n < 3 ? `${n} of 3` : 'Send';
   sendBtn.disabled = n < 3;
+  composerError.hidden = true;
 }
 
 function resetLines() {
@@ -260,13 +221,9 @@ function startChat() {
   chatScreen.classList.add('opening');
   updateChrome(userState);
   resetLines();
-
-  const day = userState.day;
-  const opener = day <= 1
-    ? "Right. Three things you're grateful for. <span class=\"soft\">Go.</span>"
-    : `Day ${day}. Three things. <span class="soft">Go.</span>`;
-  appendAI(opener, true);
-  lines[0].focus();
+  setRotator(true);
+  // On a phone an auto-focus just throws the keyboard over the headline.
+  if (window.innerWidth >= 900) lines[0].focus({ preventScroll: true });
 }
 
 /**
@@ -277,15 +234,13 @@ async function submitThree() {
   const items = readLines();
   if (items.filter(Boolean).length < 3) return;
 
-  chatScreen.classList.remove('opening');
-  thread.querySelectorAll('.caret').forEach((c) => c.remove());
   sendBtn.disabled = true;
 
   const trio = appendTrio(items);
   tick();
 
   const streakNote = userState.streak > 0 ? ` That's ${userState.streak + 1} days.` : '';
-  const stamp = appendAI(`Day ${userState.day} complete.${streakNote}`);
+  const stamp = appendAI(`Day ${userState.day} complete.${streakNote}`, 'stamp');
   showDoneState();
 
   let data = null;
@@ -294,19 +249,17 @@ async function submitThree() {
   } catch { /* handled as a failed save below */ }
 
   if (!data?.done) {
-    // Nothing was saved, so put them back where they were.
+    // Nothing was saved, so put them back exactly where they were.
     trio.remove();
     stamp.remove();
+    chatScreen.classList.add('opening');
+    setRotator(true);
     composer.hidden = false;
     doneFooter.hidden = true;
-    thread.querySelectorAll('.user').forEach((u) => u.classList.remove('spent'));
     lines.forEach((el, i) => { el.value = items[i]; });
     refreshLines();
-    const err = document.createElement('div');
-    err.className = 'msg-error';
-    err.textContent = data?.reply ?? "couldn't save that. try again.";
-    thread.appendChild(err);
-    scrollThread();
+    composerError.textContent = data?.reply ?? "couldn't save that - try again";
+    composerError.hidden = false;
     return;
   }
 
@@ -445,7 +398,7 @@ const navRow = (label, val) =>
 const VIEWS = {
   personality: () => ({
     h: 'Meet your guide.',
-    l: "Choose my personality. Change it whenever you like - I'll pick up where we left off.",
+    l: 'Choose my personality. Change it whenever you like.',
     b: cardMarkup(PERSONALITIES, settings.personality, 'personality'),
   }),
   level: () => ({
@@ -531,20 +484,12 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  // Card pickers (onboarding + menu)
   const pick = e.target.closest('[data-pick]');
   if (pick) {
-    const key = pick.dataset.pick;
-    const i = +pick.dataset.i;
-    if (key === 'ob-level') { obPick.level = i; drawOnboarding(); return; }
-    if (key === 'ob-pers') { obPick.pers = i; drawOnboarding(); return; }
-    await saveSettings({ [key]: i });
+    await saveSettings({ [pick.dataset.pick]: +pick.dataset.i });
     openView(detail.dataset.k);
     return;
   }
-
-  const obTime = e.target.closest('[data-obtime]');
-  if (obTime) { obPick.time = obTime.dataset.obtime; drawOnboarding(); return; }
 
   const setTime = e.target.closest('[data-settime]');
   if (setTime) {
@@ -689,6 +634,7 @@ async function boot() {
   // Anonymous and coming back on a later day: they must sign up to carry on.
   if (init?.requiresSignup && init?.daysDone && !authSession) {
     show('chat');
+    chatScreen.classList.remove('opening');
     thread.innerHTML = '';
     composer.hidden = true;
     doneFooter.hidden = true;
@@ -697,20 +643,10 @@ async function boot() {
     return;
   }
 
-  // First run: onboarding. Skippable at every step after the welcome.
-  if (!settings.onboarded && userState.day === 1 && userState.grats_today === 0 && !init?.done) {
-    obPick.level = settings.level;
-    obPick.pers = settings.personality;
-    obPick.time = settings.reminderTime;
-    drawOnboarding();
-    obGo(0);
-    show('onboarding');
-    return;
-  }
-
   show('chat');
 
   if (init?.done) {
+    chatScreen.classList.remove('opening');
     thread.innerHTML = '';
     updateChrome(userState);
     const streakNote = userState.streak > 1 ? ` ${userState.streak} days.` : '';
