@@ -43,17 +43,17 @@ export const LEVELS = [
   {
     label: 'First time',
     desc: 'First go at this. Ease me in, anything counts.',
-    addon: ` The user is brand new to this. DROP THE HARSHEST EDGE - lean into the warmer side of your voice. NO quality gate: accept ANYTHING. Single words ("my dog", "my coffee") are complete, finished entries. NO "try harder", NO "be more specific". The goal is purely building the habit. If they seem stuck, gently offer one or two suggestions. Three thin entries from this user is a WIN.`,
+    addon: ` The user is brand new to this. Drop the harshest edge and lean into the warmer side of your voice. Three thin entries from this user is a WIN - treat it like one.`,
   },
   {
     label: 'A bit',
     desc: 'Done it a few times. Keep me honest.',
-    addon: ` The user wants light accountability. Be generous: count an entry the moment it shows even a flicker of why it matters or any specific detail. A completely bare noun with zero context gets ONE gentle nudge asking what made it matter today - then accept whatever comes back. Never nudge the same item twice. The bar is low; any honest human detail clears it.`,
+    addon: ` The user has done this a handful of times. Normal voice, light touch. Notice what they actually wrote without making a meal of it.`,
   },
   {
     label: 'Experienced',
     desc: 'Done this properly before. High bar, no coddling.',
-    addon: ` The user explicitly asked for no coddling. The bar is HIGH and quality is the only key - persistence buys nothing. A bare noun or an entry with zero personal reflection does not count; push back in full voice. The only exception is sincere stuckness - if they truly cannot think of anything, drop the bite, offer a prompt, and let a real attempt through.`,
+    addon: ` The user explicitly asked for no coddling. Full voice, sharp and quick. You can rib them for a thin entry, but never ask them to redo it - it is already logged.`,
   },
 ];
 
@@ -84,7 +84,11 @@ export function getDailyMood() {
   return null;
 }
 
-export function buildSystemPrompt(state) {
+/**
+ * The day is already logged by the time this runs. Claude's only job is one
+ * short line back in character - never a gate, never a request for more.
+ */
+export function buildAckPrompt(state, items) {
   const p = PERSONALITIES[state.personality] ?? PERSONALITIES[0];
   const lvl = LEVELS[state.level] ?? LEVELS[1];
   const mood = getDailyMood();
@@ -99,21 +103,23 @@ ${mood ? `\nTODAY'S MOOD: ${mood}` : ''}
 
 SESSION:
 - Today is ${dayName}, day ${state.day} of their journalling
-- Streak: ${state.streak} day${state.streak !== 1 ? 's' : ''}
-- Gratitudes logged so far today: ${state.grats_today}/3
+- Streak before today: ${state.streak} day${state.streak !== 1 ? 's' : ''}
 
-Collect 3 gratitudes. Keep replies short - two sentences at most. This is a web chat.
-Once 3 are logged, close the day briefly. No fanfare.
+They have just written their three things for today. Here they are:
+${items.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+THE DAY IS ALREADY DONE AND SAVED. This is not a check. Never judge how good the
+entries are, never ask for more, never ask them to try again or be more specific -
+not even if what they wrote is thin, daft or complete nonsense. Take it and move on.
+
+Write ONE short reply in character: acknowledge something they actually wrote, then
+send them off. Two sentences at most.
 
 British English throughout. Use hyphens, never em-dashes or en-dashes.
 Banned words: journey, mindfulness, wellness, self-care, manifest, intentional, holding space, energy, practice.
 Never mention notifications.
 
-If someone shows genuine distress (not just grumpy), drop the character, acknowledge it plainly, and note that support is available.
+If someone shows genuine distress, drop the character, acknowledge it plainly, and note that support is available.
 
-IMPORTANT: set shouldCloseDay to false while you are still collecting. Only true when grats_today + itemsSubmitted >= 3 AND your reply is the actual closing message.
-When you close the day, put the three gratitudes in "items" as short plain-text phrases in the user's own words (strip filler, keep it under about 10 words each).
-
-RESPONSE FORMAT - valid JSON only, no markdown fences:
-{"reply":"...","userIntent":"gratitude|conversational|distress|other","itemsSubmitted":0,"shouldCloseDay":false,"items":[]}`;
+Reply with the line itself and nothing else - no JSON, no quotes, no preamble.`;
 }

@@ -46,6 +46,8 @@ const SCREENS = ['onboarding', 'chat', 'journal', 'menu'];
 
 function show(name) {
   SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('on', s === name));
+  // The rotator can only measure itself once its screen is actually on.
+  setRotator(name === 'onboarding' && obStep === 0);
   window.scrollTo(0, 0);
   if (name === 'journal') loadJournal();
 }
@@ -117,6 +119,43 @@ function drawOnboarding() {
     `<button class="time${t === obPick.time ? ' on' : ''}" data-obtime="${t}">${t}</button>`).join('');
 }
 
+// The welcome tagline: one word swaps for the next, dropping in from above.
+const ROTATE_WORDS = ['guys', 'dudes', 'lads', 'blokes', 'mandem'];
+const rotator = $('ob-rotator');
+let rotWords = [];
+let rotAt = 0;
+let rotTimer = null;
+
+function drawRotator() {
+  rotator.innerHTML = ROTATE_WORDS.map((w, i) =>
+    `<span class="rw${i === 0 ? ' on' : ''}">${esc(w)}</span>`).join('');
+  rotWords = [...rotator.children];
+}
+
+// Absolutely-positioned words keep their natural width, so the box can follow them.
+function sizeRotator() {
+  const w = rotWords[rotAt]?.offsetWidth;
+  if (w) rotator.style.width = `${w}px`;
+}
+
+function stepRotator() {
+  const leaving = rotWords[rotAt];
+  rotAt = (rotAt + 1) % rotWords.length;
+  const arriving = rotWords[rotAt];
+  leaving.classList.replace('on', 'out');
+  arriving.classList.remove('out');
+  arriving.classList.add('on');
+  sizeRotator();
+}
+
+function setRotator(on) {
+  clearInterval(rotTimer);
+  rotTimer = null;
+  if (!on) return;
+  sizeRotator();
+  rotTimer = setInterval(stepRotator, 1800);
+}
+
 const OB_LABELS = ['Start.', 'Next.', 'Next.', 'Next.', 'Turn nudges on.'];
 
 function obGo(n) {
@@ -124,6 +163,7 @@ function obGo(n) {
   obStep = n;
   document.querySelectorAll('#screen-onboarding .step').forEach((x) => x.classList.toggle('on', +x.dataset.s === obStep));
   $('ob-dots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i <= obStep));
+  setRotator(obStep === 0);
   $('ob-next').textContent = OB_LABELS[obStep];
   $('ob-skip').hidden = obStep === 0;
   $('ob-skip').textContent = obStep === 4 ? "I'll risk it" : 'Skip';
@@ -145,6 +185,8 @@ async function finishOnboarding(withNudges = true) {
 
 $('ob-dots').innerHTML = '<i class="on"></i>' + '<i></i>'.repeat(4);
 drawOnboarding();
+drawRotator();
+document.fonts?.ready.then(sizeRotator);
 $('ob-next').addEventListener('click', () => obGo(obStep + 1));
 $('ob-skip').addEventListener('click', () => {
   if (obStep === 4) return finishOnboarding(false);
@@ -156,10 +198,11 @@ $('ob-skip').addEventListener('click', () => {
 ══════════════════════════════════════════════════════════════ */
 const chatScreen = $('screen-chat');
 const thread = $('thread');
-const inputEl = $('chat-input');
 const sendBtn = $('send-btn');
 const composer = $('composer');
 const doneFooter = $('done-footer');
+const lines = [...document.querySelectorAll('#three .tin')];
+const countHint = $('three-count');
 
 function appendAI(html, opening = false) {
   const el = document.createElement('div');
@@ -170,26 +213,15 @@ function appendAI(html, opening = false) {
   return el;
 }
 
-function appendUser(text) {
+function appendTrio(items) {
   const el = document.createElement('div');
   el.className = 'user enter';
-  el.textContent = text;
+  el.innerHTML = items.map((t, i) => `<span class="ti"><i>0${i + 1}</i>${esc(t)}</span>`).join('');
   thread.appendChild(el);
   scrollThread();
-}
-
-function showThinking() {
-  const el = document.createElement('div');
-  el.className = 'thinking';
-  el.textContent = '·';
-  thread.appendChild(el);
-  scrollThread();
-  let n = 1;
-  el._t = setInterval(() => { n = (n % 3) + 1; el.textContent = '·'.repeat(n); }, 280);
   return el;
 }
 
-const removeThinking = (el) => { if (el) { clearInterval(el._t); el.remove(); } };
 const scrollThread = () => { thread.scrollTop = thread.scrollHeight; };
 
 function updateChrome(state) {
@@ -206,83 +238,106 @@ function showDoneState() {
   thread.querySelectorAll('.user').forEach((u) => u.classList.add('spent'));
 }
 
+const readLines = () => lines.map((el) => el.value.trim());
+
+function refreshLines() {
+  const vals = readLines();
+  lines.forEach((el, i) => el.closest('.tline').classList.toggle('filled', !!vals[i]));
+  const n = vals.filter(Boolean).length;
+  countHint.textContent = `${n} of 3`;
+  sendBtn.disabled = n < 3;
+}
+
+function resetLines() {
+  lines.forEach((el) => { el.value = ''; });
+  refreshLines();
+}
+
 function startChat() {
   thread.innerHTML = '';
   composer.hidden = false;
   doneFooter.hidden = true;
   chatScreen.classList.add('opening');
   updateChrome(userState);
+  resetLines();
 
   const day = userState.day;
   const opener = day <= 1
     ? "Right. Three things you're grateful for. <span class=\"soft\">Go.</span>"
     : `Day ${day}. Three things. <span class="soft">Go.</span>`;
   appendAI(opener, true);
-  inputEl.focus();
+  lines[0].focus();
 }
 
-async function sendMessage() {
-  const text = inputEl.value.trim();
-  if (!text) return;
+/**
+ * Three lines in, day done. Whatever they wrote is accepted on the spot - the
+ * guide's reply is flavour that lands afterwards, never a gate.
+ */
+async function submitThree() {
+  const items = readLines();
+  if (items.filter(Boolean).length < 3) return;
 
   chatScreen.classList.remove('opening');
   thread.querySelectorAll('.caret').forEach((c) => c.remove());
-
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
   sendBtn.disabled = true;
-  appendUser(text);
+
+  const trio = appendTrio(items);
   tick();
-  const thinking = showThinking();
 
+  const streakNote = userState.streak > 0 ? ` That's ${userState.streak + 1} days.` : '';
+  const stamp = appendAI(`Day ${userState.day} complete.${streakNote}`);
+  showDoneState();
+
+  let data = null;
   try {
-    const data = await api('/api/chat', { message: text });
-    removeThinking(thinking);
+    data = await api('/api/chat', { items });
+  } catch { /* handled as a failed save below */ }
 
-    if (data.error === 'rate_limited') {
-      appendAI(esc(data.reply));
-      showDoneState();
-      return;
-    }
-
-    if (data.reply) appendAI(esc(data.reply));
-    if (data.settings) settings = data.settings;
-    updateChrome(data.userState);
-
-    if (data.done || data.requiresSignup) {
-      showDoneState();
-      journalLoaded = false;
-      if (data.requiresSignup) {
-        await delay(600);
-        showSignupPanel('One down.');
-      }
-    }
-  } catch {
-    removeThinking(thinking);
+  if (!data?.done) {
+    // Nothing was saved, so put them back where they were.
+    trio.remove();
+    stamp.remove();
+    composer.hidden = false;
+    doneFooter.hidden = true;
+    thread.querySelectorAll('.user').forEach((u) => u.classList.remove('spent'));
+    lines.forEach((el, i) => { el.value = items[i]; });
+    refreshLines();
     const err = document.createElement('div');
     err.className = 'msg-error';
-    err.textContent = "couldn't send that. try again.";
+    err.textContent = data?.reply ?? "couldn't save that. try again.";
     thread.appendChild(err);
-    inputEl.value = text;
     scrollThread();
+    return;
   }
 
-  sendBtn.disabled = !inputEl.value.trim();
+  if (data.settings) settings = data.settings;
+  updateChrome(data.userState);
+  journalLoaded = false;
+  resetLines();
+
+  if (data.reply) {
+    await delay(420);
+    appendAI(esc(data.reply));
+  }
+
+  if (data.requiresSignup) {
+    await delay(600);
+    showSignupPanel('One down.');
+  }
 }
 
-sendBtn.addEventListener('click', sendMessage);
+sendBtn.addEventListener('click', submitThree);
 
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 200) + 'px';
-  sendBtn.disabled = !inputEl.value.trim();
-});
-
-inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !sendBtn.disabled) {
+lines.forEach((el, i) => {
+  el.addEventListener('input', refreshLines);
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
     e.preventDefault();
-    sendMessage();
-  }
+    const next = lines[i + 1];
+    if (next && !e.metaKey && !e.ctrlKey) return next.focus();
+    if (!sendBtn.disabled) return submitThree();
+    lines.find((l) => !l.value.trim())?.focus();
+  });
 });
 
 $('go-journal').addEventListener('click', () => show('journal'));
@@ -435,8 +490,8 @@ const VIEWS = {
   help: () => ({
     h: 'Help',
     b: `<p class="lede">Three things a day. That's the whole thing.</p>`
-      + `<p class="note">Missed a day? The streak resets, nothing else. The journal keeps every day you did show up.</p>`
-      + `<p class="note">Stuck? Say so and I'll give you a prompt. Bare nouns count on the easier levels.</p>`,
+      + `<p class="note">Fill the three lines, hit send, day done. Whatever you write is taken as it is - nobody marks it. Showing up is the bit that counts.</p>`
+      + `<p class="note">Missed a day? The streak resets, nothing else. The journal keeps every day you did show up.</p>`,
   }),
 };
 
@@ -666,16 +721,6 @@ async function boot() {
       await delay(600);
       showSignupPanel('One down.');
     }
-    return;
-  }
-
-  if (userState.grats_today > 0) {
-    thread.innerHTML = '';
-    composer.hidden = false;
-    doneFooter.hidden = true;
-    updateChrome(userState);
-    appendAI(userState.grats_today === 1 ? 'One down. Two more.' : 'Two down. One more.');
-    inputEl.focus();
     return;
   }
 

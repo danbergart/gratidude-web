@@ -196,6 +196,17 @@ textarea:focus, input:focus { outline: 0; }
   transition: color .4s;
 }
 .user.spent { color: var(--soft); }
+.user .ti { display: block; }
+.user .ti + .ti { margin-top: 7px; }
+.user .ti i {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .16em;
+  font-weight: 600;
+  color: var(--ochre);
+  margin-right: 10px;
+}
+.user.spent .ti i { color: var(--faint); }
 
 .thinking { font-family: var(--serif); font-style: italic; font-size: 23px; color: var(--faint); }
 
@@ -212,9 +223,23 @@ textarea:focus, input:focus { outline: 0; }
 
 .composer { border-top: 1px solid var(--ruleSoft); background: var(--paper); }
 .composer .wrap { padding-top: 16px; padding-bottom: 28px; }
-.composer textarea { width: 100%; padding: 0; font-size: 15px; min-height: 64px; max-height: 200px; }
-.composer textarea::placeholder { font-size: 17px; }
-.composer .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; }
+.composer .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; border-bottom: 0; }
+
+/* Three numbered lines, so there is no question how many are wanted. */
+.three { border-top: 1px solid var(--ruleSoft); }
+.tline { display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid var(--ruleSoft); }
+.tline .n {
+  flex: 0 0 auto;
+  color: var(--rule);
+  font-size: 10px;
+  letter-spacing: .16em;
+  font-weight: 600;
+  transition: color .16s;
+}
+.tline.filled .n, .tline:focus-within .n { color: var(--ochre); }
+.tline:focus-within { border-bottom-color: var(--ink); }
+.tline .tin { flex: 1; min-width: 0; width: 100%; padding: 13px 0; font-size: 16px; line-height: 1.4; }
+.tline .tin::placeholder { font-size: 16px; }
 
 .footbar { border-top: 1px solid var(--ruleSoft); }
 .footbar .wrap { display: flex; align-items: baseline; justify-content: space-between; padding-top: 20px; padding-bottom: 34px; }
@@ -257,6 +282,48 @@ textarea:focus, input:focus { outline: 0; }
   line-height: 1.15;
   letter-spacing: -.02em;
 }
+
+.stage h1.hero {
+  font-size: clamp(48px, 13vw, 76px);
+  line-height: 1;
+  letter-spacing: -.035em;
+}
+
+/* ── Rotating tagline ── */
+.tagline {
+  font-family: var(--serif);
+  font-size: clamp(16px, 4.4vw, 20px);
+  line-height: 1.25;
+  color: var(--soft);
+  margin: 18px 0 0;
+  max-width: 30ch;
+  text-wrap: pretty;
+}
+.rotator {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  height: 1.25em;
+  line-height: 1.25;
+  vertical-align: -.36em;
+  white-space: nowrap;
+  color: var(--ochre);
+  font-style: italic;
+  transition: width .34s cubic-bezier(.4, 0, .2, 1);
+}
+.rotator .rw {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 1.25;
+  opacity: 0;
+  transform: translateY(-118%);
+}
+/* New word drops in from above and shoves the old one out of the bottom. */
+.rotator .rw.on { animation: rot-in .42s cubic-bezier(.22, 1, .36, 1) both; }
+.rotator .rw.out { animation: rot-out .42s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes rot-in { from { transform: translateY(-118%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes rot-out { from { transform: translateY(0); opacity: 1; } to { transform: translateY(118%); opacity: 0; } }
 
 .stage .rule { width: 40px; height: 1px; background: var(--ochre); margin: 20px 0; }
 .stage .sub {
@@ -522,4 +589,7 @@ button.row:hover .lab { color: var(--ochre); }
 @media (prefers-reduced-motion: reduce) {
   .enter { animation: none; }
   .caret { animation: none; }
+  .rotator { transition: none; }
+  .rotator .rw.on { animation: none; opacity: 1; transform: none; }
+  .rotator .rw.out { animation: none; opacity: 0; transform: none; }
 }

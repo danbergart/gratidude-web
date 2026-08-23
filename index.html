@@ -22,9 +22,10 @@
   <div class="stage">
     <div class="mid">
       <section class="step on" data-s="0">
-        <h1>Three things.<br>Every day.</h1>
+        <h1 class="hero">Gratitude</h1>
+        <p class="tagline">A gratitude journal for <span class="rotator" id="ob-rotator"></span></p>
         <div class="rule"></div>
-        <p class="sub">Everything else lives in the menu.</p>
+        <p class="sub">Three things. Every day. Everything else lives in the menu.</p>
       </section>
       <section class="step" data-s="1">
         <h1 class="up">What's your favourite sports team?</h1>
@@ -75,9 +76,22 @@
 
   <div class="composer" id="composer">
     <div class="wrap">
-      <textarea id="chat-input" rows="3" placeholder="type three things…" aria-label="Your gratitudes"></textarea>
+      <div class="three" id="three">
+        <div class="tline">
+          <span class="n">01</span>
+          <input class="tin" data-i="0" maxlength="180" autocomplete="off" placeholder="something good" aria-label="First thing">
+        </div>
+        <div class="tline">
+          <span class="n">02</span>
+          <input class="tin" data-i="1" maxlength="180" autocomplete="off" placeholder="anything counts" aria-label="Second thing">
+        </div>
+        <div class="tline">
+          <span class="n">03</span>
+          <input class="tin" data-i="2" maxlength="180" autocomplete="off" placeholder="even something daft" aria-label="Third thing">
+        </div>
+      </div>
       <div class="row">
-        <span class="hint">⌘ + enter to send</span>
+        <span class="hint" id="three-count">0 of 3</span>
         <button class="slab" id="send-btn" disabled>Send</button>
       </div>
     </div>
