@@ -31,7 +31,7 @@ let authSession = null;
 let anonId = null;
 let userState = { day: 1, streak: 0, grats_today: 0 };
 let settings = { personality: 0, level: 1, team: '', displayName: '', sounds: true, notifEnabled: false, reminderTime: '8:00 pm', onboarded: false };
-let journal = { entries: {}, stats: { streak: 0, allTime: 0 } };
+let journal = { entries: {}, since: null, stats: { streak: 0, allTime: 0 } };
 let journalLoaded = false;
 let viewMonth = new Date();
 let selectedDay = null;
@@ -330,14 +330,17 @@ function renderMonth() {
     const cellDate = new Date(y, m, d);
     const isFuture = cellDate > now && !(isThisMonth && d === now.getDate());
     const isToday = isThisMonth && d === now.getDate();
+    // Days before you started are inert, not failures.
+    const isPre = journal.since ? key < journal.since : false;
     if (entry) monthCount++;
 
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = d;
     b.dataset.key = key;
-    b.className = 'day ' + (isFuture ? 'future' : entry ? 'has' : 'miss') + (isToday ? ' today' : '');
-    if (!isFuture) b.addEventListener('click', () => selectDay(key));
+    const mark = isFuture ? 'future' : isPre ? 'future' : entry ? 'has' : 'miss';
+    b.className = `day ${mark}${isToday ? ' today' : ''}`;
+    if (!isFuture && !isPre) b.addEventListener('click', () => selectDay(key));
     grid.appendChild(b);
   }
 

@@ -16,8 +16,12 @@ export default async (req) => {
   const byDate = {};
   for (const e of rows) byDate[e.entry_date] = { items: e.items, dayNum: e.day_num };
 
+  // Days before someone joined are not days they missed.
+  const since = (rows[0]?.entry_date) ?? (state.created_at ?? '').split('T')[0] ?? null;
+
   return json({
     entries: byDate,
+    since,
     stats: { streak: state.streak ?? 0, allTime: rows.length },
   });
 };

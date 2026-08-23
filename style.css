@@ -310,6 +310,8 @@ textarea:focus, input:focus { outline: 0; }
   text-transform: uppercase;
   font-weight: 600;
   visibility: hidden;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 .card .ex { font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 1.4; color: var(--soft); margin: 0; }
 .card.chosen { background: #fff; border-left: 2px solid var(--ochre); padding-left: 17px; }
