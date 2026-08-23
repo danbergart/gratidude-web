@@ -631,8 +631,8 @@ async function boot() {
   // The desktop detail pane may have rendered before settings arrived.
   if (detail.dataset.k) openView(detail.dataset.k);
 
-  // Anonymous, day one already done, new day: they must sign up to carry on.
-  if (init?.requiresSignup && !authSession) {
+  // Anonymous and coming back on a later day: they must sign up to carry on.
+  if (init?.requiresSignup && init?.daysDone && !authSession) {
     show('chat');
     thread.innerHTML = '';
     composer.hidden = true;
@@ -661,6 +661,11 @@ async function boot() {
     const streakNote = userState.streak > 1 ? ` ${userState.streak} days.` : '';
     appendAI(`Done for today.${streakNote} See you tomorrow.`);
     showDoneState();
+    // Still anonymous: a soft nudge, not a wall.
+    if (init.requiresSignup && !authSession) {
+      await delay(600);
+      showSignupPanel('One down.');
+    }
     return;
   }
 
