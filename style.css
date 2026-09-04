@@ -148,6 +148,11 @@ a.slab { text-decoration: none; color: var(--ink); }
 .logged .g:nth-child(3) .n { color: var(--link); }
 .logged .t { font-family: var(--sans); font-size: 17px; line-height: 1.4; text-wrap: pretty; }
 
+/* Resurfaced past entry - the reward */
+.echo { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 5px; padding: 16px 18px; border: 1px solid var(--ruleSoft); border-left: 2px solid var(--mustard); background: #fcfbf8; }
+.echo-label { font-family: var(--mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; color: var(--mustardInk); }
+.echo-text { font-family: var(--serif); font-style: italic; font-size: 18px; line-height: 1.35; color: var(--ink); text-wrap: pretty; }
+
 .mini { width: 100%; max-width: 440px; }
 .mini .mh { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
 .mini .mh .mo { font-family: var(--serif); font-size: 17px; }

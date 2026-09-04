@@ -1,5 +1,6 @@
 // Save today's three gratitudes. No AI, no character - just store and advance.
 import { supabase, todayStr, yesterdayStr, json, preflight, loadSession } from '../lib/session.mjs';
+import { pickResurfaced } from '../lib/resurface.mjs';
 
 const MAX_ITEM_LEN = 280;
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_ITEM_LEN);
@@ -35,6 +36,13 @@ export default async (req) => {
   const dayNum = state.day;
 
   const owner = userId ? { user_id: id } : { anon_id: id };
+
+  // Grab past entries (before writing today's) to resurface one as the reward.
+  const { data: pastRows } = await supabase
+    .from('entries').select('entry_date, items')
+    .match(owner).neq('entry_date', today);
+  const resurfaced = pickResurfaced(pastRows ?? [], today);
+
   await supabase.from('entries').delete().match({ ...owner, entry_date: today });
   await supabase.from('entries').insert({ ...owner, entry_date: today, items: three, day_num: dayNum });
 
@@ -47,7 +55,7 @@ export default async (req) => {
     last_session_date: today,
   }).eq('id', id);
 
-  return json({ day: dayNum, streak: newStreak, doneToday: true, todayItems: three });
+  return json({ day: dayNum, streak: newStreak, doneToday: true, todayItems: three, resurfaced });
 };
 
 export const config = { path: '/api/submit' };

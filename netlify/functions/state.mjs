@@ -1,6 +1,7 @@
 // Current state for the home + done screens: day, streak, today's entry,
 // reminder settings, and a few recent days. No AI.
 import { supabase, todayStr, json, preflight, loadSession } from '../lib/session.mjs';
+import { pickResurfaced } from '../lib/resurface.mjs';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return preflight();
@@ -37,6 +38,7 @@ export default async (req) => {
     doneToday,
     todayItems: todayRow?.items ?? [],
     recent: entries.filter((e) => e.entry_date !== today).slice(0, 5),
+    resurfaced: doneToday ? pickResurfaced(entries, today) : null,
     monthCount,
     allTime: entries.length,
     reminder: { enabled: state.notif_enabled ?? false, time: state.reminder_time ?? '8:00 pm' },

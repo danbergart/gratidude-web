@@ -109,6 +109,15 @@ function renderDone(items) {
     : `day ${current.day}`;
   $('logged').innerHTML = items.map((t, i) =>
     `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
+  const r = current.resurfaced;
+  if (r && r.item) {
+    $('echo-label').textContent = r.label;
+    $('echo-text').textContent = `“${r.item}”`;
+    $('echo').hidden = false;
+  } else {
+    $('echo').hidden = true;
+  }
+
   $('mcount').textContent = `${current.monthCount ?? 0} this month`;
 
   const recent = current.recent ?? [];
