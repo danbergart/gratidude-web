@@ -120,7 +120,7 @@ function renderDone(items) {
 
   $('mcount').textContent = `${current.monthCount ?? 0} this month`;
 
-  const recent = current.recent ?? [];
+  const recent = (current.recent ?? []).filter((r) => r && r.date);
   $('recent').innerHTML = recent.map((r) => {
     const nice = fmtRecent(r.date);
     const first = (r.items?.[0] ?? '').trim();

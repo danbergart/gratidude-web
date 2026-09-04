@@ -37,7 +37,7 @@ export default async (req) => {
     streak: state.streak,
     doneToday,
     todayItems: todayRow?.items ?? [],
-    recent: entries.filter((e) => e.entry_date !== today).slice(0, 5),
+    recent: entries.filter((e) => e.entry_date !== today).slice(0, 5).map((e) => ({ date: e.entry_date, items: e.items })),
     resurfaced: doneToday ? pickResurfaced(entries, today) : null,
     monthCount,
     allTime: entries.length,
