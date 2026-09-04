@@ -99,7 +99,7 @@ a.slab { text-decoration: none; color: var(--ink); }
 .mark-big i { font-style: normal; }
 .tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 32px; white-space: nowrap; padding-left: 20px; }
 
-.slot { display: inline-block; width: 7.4em; height: 1.2em; overflow: hidden; vertical-align: -.22em; text-align: left; }
+.slot { display: inline-block; width: 9.8em; height: 1.2em; overflow: hidden; vertical-align: -.22em; text-align: left; }
 .slot .reel { display: block; transition: transform .42s cubic-bezier(.4,0,.2,1); }
 .slot .reel > span { display: block; height: 1.2em; line-height: 1.2em; white-space: nowrap; }
 .slot .reel > span.w1 { color: var(--moss); }
