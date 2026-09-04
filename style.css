@@ -124,9 +124,10 @@ a.slab { text-decoration: none; color: var(--ink); }
 .btns { display: flex; gap: 12px; justify-content: flex-start; margin-top: 22px; flex-wrap: wrap; }
 .metarow { display: flex; gap: 18px; justify-content: flex-start; margin-top: 22px; }
 
-.pitch { padding-top: 0; padding-bottom: 30px; text-align: center; border-top: 1px solid var(--ruleSoft); margin-top: auto; }
+.pitch { padding-top: 0; padding-bottom: 30px; text-align: left; border-top: 1px solid var(--ruleSoft); margin-top: auto; }
+.pitch.wrap { max-width: 520px; }
 .pitch h3 { margin: 18px 0 7px; font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; color: var(--moss); }
-.pitch p { margin: 0 auto; font-family: var(--mono); font-size: 13px; line-height: 1.65; color: #5f5c53; max-width: 58ch; text-wrap: pretty; }
+.pitch p { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.65; color: #5f5c53; max-width: none; text-wrap: pretty; }
 
 /* ══════════════════════════════════
    DONE
@@ -274,6 +275,7 @@ blockquote .who { font-family: var(--mono); font-size: 10px; letter-spacing: .16
 .card .slab { display: block; width: 100%; margin-top: 8px; }
 .field-error { font-size: 9px; letter-spacing: .1em; font-weight: 600; color: var(--brick); margin: -12px 0 12px; min-height: 12px; text-transform: lowercase; }
 .sent-note { font-family: var(--sans); font-size: 14px; line-height: 1.6; color: var(--soft); }
+.in-actions { margin-top: 22px; }
 .linkrow { margin-top: 16px; text-align: center; }
 .linkrow button { background: none; border: 0; text-decoration: underline; color: var(--link); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; padding: 0; }
 .linkrow button:hover { color: var(--brick); }

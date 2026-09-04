@@ -55,6 +55,16 @@ function show(name) {
   window.scrollTo(0, 0);
   if (name === 'home') { resetHome(); $('g1').focus(); }
   if (name === 'journal') loadJournal();
+  if (name === 'login') paintLogin();
+}
+
+// The account screen reflects whether you're signed in.
+function paintLogin() {
+  const signedIn = !!authSession;
+  $('login-card').hidden = signedIn;
+  $('login-sent').hidden = true;
+  $('login-in').hidden = !signedIn;
+  if (signedIn) $('account-email').textContent = authSession.user?.email ?? '';
 }
 
 document.addEventListener('click', (e) => {
@@ -320,11 +330,21 @@ async function activate(session) {
   history.replaceState(null, '', window.location.pathname);
 }
 
-sb.auth.onAuthStateChange(async (_e, session) => {
-  if (!session || authSession?.access_token === session.access_token) return;
+// Fires when the magic link completes. INITIAL_SESSION (a restored session on
+// load) is handled by init() instead, so we only react to a genuine sign-in.
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event !== 'SIGNED_IN' || !session) return;
+  if (authSession?.access_token === session.access_token) return;
   authSession = session;
   await activate(session);
-  await boot();
+  try { const st = await api('/api/state'); current = { ...current, ...st }; } catch { /* non-fatal */ }
+  // Land on a clear confirmation, not a page that looks logged-out.
+  show('login');
+});
+
+document.getElementById('signout-btn')?.addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
 });
 
 async function boot() {
