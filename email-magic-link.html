@@ -1,0 +1,50 @@
+<!--
+  Gratidude magic-link email.
+  Paste the <body> contents into Supabase → Authentication → Email Templates → Magic Link.
+  Keep the {{ .ConfirmationURL }} token exactly as-is.
+  Email clients ignore <style> and web fonts, so everything is inline with system fonts
+  (Georgia + Arial), matching the site as closely as email allows.
+-->
+<div style="margin:0;padding:0;background:#f4f2ec;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ec;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:460px;background:#ffffff;border:1px solid #e2e0d9;">
+          <tr>
+            <td style="padding:36px 36px 8px 36px;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;letter-spacing:-1px;line-height:1;">
+                <span style="color:#3f6b4a;">G</span><span style="color:#b4433f;">r</span><span style="color:#c99420;">a</span><span style="color:#a8722a;">t</span><span style="color:#6b4a7a;">i</span><span style="color:#17160f;">dude</span>
+              </div>
+              <div style="height:1px;width:40px;background:#a8722a;margin:18px 0 22px 0;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 36px;">
+              <p style="margin:0 0 14px 0;font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.3;color:#17160f;">Here's your way in.</p>
+              <p style="margin:0 0 26px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#5f5c53;">Tap the button to sign in to Gratidude. It keeps everything you've written so far, and works on any device. No password to remember.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 36px 8px 36px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:#17160f;">
+                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 26px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#f4f2ec;text-decoration:none;">Sign in to Gratidude</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:22px 36px 36px 36px;">
+              <p style="margin:0 0 4px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9b988c;">If the button doesn't work, paste this into your browser:</p>
+              <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;color:#3a5c8c;word-break:break-all;">{{ .ConfirmationURL }}</p>
+              <p style="margin:22px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9b988c;">Didn't ask for this? Ignore it - nothing happens until you tap the link.</p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:18px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#9b988c;">Gratidude &middot; three things, every day</p>
+      </td>
+    </tr>
+  </table>
+</div>
