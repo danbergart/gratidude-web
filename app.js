@@ -33,20 +33,17 @@ async function api(path, body = {}, opts = {}) {
   return res.json();
 }
 
-// ── Icon nav ────────────────────────────────────────────────────────────────
-const ICONS = {
-  journal: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.6" y="3.1" width="14.8" height="13.3"/><path d="M1.6 6.7h14.8M5.6 1.5v3.2M12.4 1.5v3.2"/></svg>',
-  about:   '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="9" r="7.4"/><path d="M9 7.9v4.8M9 5.2v1.1"/></svg>',
-  account: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="6.4" r="3.1"/><path d="M2.9 16.4c0-3.4 2.7-5.2 6.1-5.2s6.1 1.8 6.1 5.2"/></svg>',
-};
+// ── Nav ───────────────────────────────────────────────────────────────────
+// Two text links + the account icon. Text reads clearer than three glyphs.
+const PERSON_ICON = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="6.4" r="3.1"/><path d="M2.9 16.4c0-3.4 2.7-5.2 6.1-5.2s6.1 1.8 6.1 5.2"/></svg>';
 
 function paintNav() {
   document.querySelectorAll('.navslot').forEach((slot) => {
     const here = slot.dataset.here;
-    slot.innerHTML = ['journal', 'about', 'account'].map((k) => {
-      const dest = k === 'account' ? 'login' : k;
-      return `<button class="ico${here === k ? ' on' : ''}" type="button" data-go="${dest}" aria-label="${k === 'account' ? 'Account' : k[0].toUpperCase() + k.slice(1)}">${ICONS[k]}</button>`;
-    }).join('');
+    slot.innerHTML =
+      `<button class="link${here === 'journal' ? ' on' : ''}" type="button" data-go="journal">history</button>`
+      + `<button class="link${here === 'about' ? ' on' : ''}" type="button" data-go="about">options</button>`
+      + `<button class="ico${here === 'account' ? ' on' : ''}" type="button" data-go="login" aria-label="Account">${PERSON_ICON}</button>`;
   });
 }
 
@@ -123,9 +120,6 @@ function pickHeading(dayNum) {
 
 function renderDone(items) {
   $('done-head').textContent = pickHeading(current.todayDayNum ?? current.day);
-  $('streak').innerHTML = current.streak > 0
-    ? `day ${current.day} · <b>streak ${current.streak}</b>`
-    : `day ${current.day}`;
   $('logged').innerHTML = items.map((t, i) =>
     `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
   const r = current.resurfaced;

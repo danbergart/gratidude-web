@@ -19,15 +19,17 @@
 <section class="screen on" id="home">
   <div class="top"><div class="right navslot" data-here="account"></div></div>
   <div class="mid">
-    <h1 class="mark-big" aria-label="Gratidude"><i class="l1">G</i><i class="l2">r</i><i class="l3">a</i><i class="l4">t</i><i class="l5">i</i><i>dude</i></h1>
-    <p class="tagline">A gratitude journal for <span class="slot" id="slot" aria-label="straight-talkers"><span class="reel"></span></span></p>
-    <div class="box" id="box">
-      <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="first thing" autocomplete="off" autofocus></div>
-      <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="second thing" autocomplete="off"></div>
-      <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="third thing" autocomplete="off"></div>
+    <div class="home-inner">
+      <h1 class="mark-big" aria-label="Gratidude"><i class="l1">G</i><i class="l2">r</i><i class="l3">a</i><i class="l4">t</i><i class="l5">i</i><i>dude</i></h1>
+      <p class="tagline">A gratitude journal for <span class="slot" id="slot" aria-label="straight-talkers"><span class="reel"></span></span></p>
+      <div class="box" id="box">
+        <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="first thing" autocomplete="off" autofocus></div>
+        <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="second thing" autocomplete="off"></div>
+        <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="third thing" autocomplete="off"></div>
+      </div>
+      <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
+      <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
     </div>
-    <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
-    <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
   </div>
   <div class="pitch wrap">
     <h3>Build the habit:</h3>
@@ -39,10 +41,7 @@
 <section class="screen" id="done">
   <div class="chrome">
     <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
-    <div class="right">
-      <span class="streak" id="streak"></span>
-      <span class="navslot" data-here=""></span>
-    </div>
+    <div class="right navslot" data-here=""></div>
   </div>
   <div class="mid">
     <h2 id="done-head">Logged.</h2>
