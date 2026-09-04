@@ -1,28 +1,25 @@
+// Full reverse-chronological journal list + stats.
 import { supabase, json, preflight, loadSession } from '../lib/session.mjs';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return preflight();
 
-  const { anonId } = await req.json();
+  const { anonId } = await req.json().catch(() => ({}));
   const session = await loadSession(req, anonId);
   if (!session) return json({ error: 'No session' }, 401);
 
   const { state, id, userId } = session;
 
-  const q = supabase.from('entries').select('entry_date, items, day_num').order('entry_date', { ascending: true });
-  const { data: entries } = userId ? await q.eq('user_id', id) : await q.eq('anon_id', id);
+  const sel = supabase.from('entries').select('entry_date, items, day_num').order('entry_date', { ascending: false });
+  const { data: rows } = userId ? await sel.eq('user_id', id) : await sel.eq('anon_id', id);
+  const entries = (rows ?? []).map((e) => ({ date: e.entry_date, items: e.items, dayNum: e.day_num }));
 
-  const rows = entries ?? [];
-  const byDate = {};
-  for (const e of rows) byDate[e.entry_date] = { items: e.items, dayNum: e.day_num };
-
-  // Days before someone joined are not days they missed.
-  const since = (rows[0]?.entry_date) ?? (state.created_at ?? '').split('T')[0] ?? null;
+  const monthPrefix = new Date().toISOString().slice(0, 7);
+  const thisMonth = entries.filter((e) => e.date.startsWith(monthPrefix)).length;
 
   return json({
-    entries: byDate,
-    since,
-    stats: { streak: state.streak ?? 0, allTime: rows.length },
+    entries,
+    stats: { streak: state.streak ?? 0, thisMonth, allTime: entries.length },
   });
 };
 

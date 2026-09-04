@@ -4,166 +4,167 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Gratidude</title>
-  <meta name="description" content="Three things you're grateful for. Every day.">
-  <meta name="theme-color" content="#000000">
+  <meta name="description" content="A gratitude journal. Three things, every day.">
+  <meta name="theme-color" content="#ffffff">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- Reusable icon nav is injected per-screen by app.js via .navslot -->
+
 <!-- ══════════ HOME ══════════ -->
-<section class="screen" id="screen-chat">
-  <div class="chrome">
-    <span class="mark">Gratidude</span>
-    <div class="right">
-      <button class="ico" type="button" id="go-journal" aria-label="Journal">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
-      </button>
-      <button class="link" type="button" id="go-menu">Menu</button>
-    </div>
-  </div>
-
+<section class="screen on" id="home">
+  <div class="top"><div class="right navslot" data-here="account"></div></div>
   <div class="mid">
-    <div class="hero" id="hero">
-      <span class="streak" id="streak-meta"></span>
-      <h1>Gratidude</h1>
-      <p class="tagline">A gratitude journal for <span class="rotator" id="rotator"></span></p>
+    <h1 class="mark-big" aria-label="Gratidude"><i class="l1">G</i><i class="l2">r</i><i class="l3">a</i><i class="l4">t</i><i class="l5">i</i><i>dude</i></h1>
+    <p class="tagline">A gratitude journal for <span class="slot" id="slot" aria-label="guys"><span class="reel"></span></span></p>
+    <div class="box" id="box">
+      <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="first thing" autocomplete="off" autofocus></div>
+      <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="second thing" autocomplete="off"></div>
+      <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="third thing" autocomplete="off"></div>
     </div>
+    <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
+    <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
+  </div>
+  <div class="pitch wrap">
+    <h3>Build the habit:</h3>
+    <p><a href="#login" data-go="login">Create a free account</a> to get notifications, save your entries, and text chat with Gratidude to improve your practice.</p>
+  </div>
+</section>
 
-    <div class="thread wrap" id="thread" role="log" aria-live="polite"></div>
-
-    <div class="composer" id="composer">
-      <div class="wrap">
-        <div class="three" id="three">
-          <div class="tline">
-            <span class="n">01</span>
-            <input class="tin" data-i="0" maxlength="180" autocomplete="off" placeholder="something good" aria-label="First thing">
-          </div>
-          <div class="tline">
-            <span class="n">02</span>
-            <input class="tin" data-i="1" maxlength="180" autocomplete="off" placeholder="anything counts" aria-label="Second thing">
-          </div>
-          <div class="tline">
-            <span class="n">03</span>
-            <input class="tin" data-i="2" maxlength="180" autocomplete="off" placeholder="even something daft" aria-label="Third thing">
-          </div>
-        </div>
-        <button class="slab full" id="send-btn" disabled>0 of 3</button>
-        <p class="msg-error" id="composer-error" hidden></p>
-      </div>
+<!-- ══════════ DONE ══════════ -->
+<section class="screen" id="done">
+  <div class="chrome">
+    <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
+    <div class="right">
+      <span class="streak" id="streak"></span>
+      <span class="navslot" data-here=""></span>
     </div>
   </div>
-
-  <div class="footbar" id="done-footer" hidden>
-    <div class="wrap">
-      <span class="bye">see you tomorrow</span>
-      <span class="done smallcaps">done</span>
+  <div class="mid">
+    <h2>Logged.</h2>
+    <p class="sub">that's today done</p>
+    <div class="logged" id="logged"></div>
+    <div class="mini">
+      <div class="mh"><span class="mo">Earlier this week</span><span class="hint" id="mcount"></span></div>
+      <div class="recent" id="recent"></div>
+    </div>
+    <div class="foot">
+      <button class="slab" type="button" data-go="journal">See the journal</button>
+      <button class="ghost" type="button" data-go="home">Edit today</button>
     </div>
   </div>
 </section>
 
 <!-- ══════════ JOURNAL ══════════ -->
-<section class="screen" id="screen-journal">
-  <div class="top">
-    <span class="mark">Gratidude</span>
-    <div class="right">
-      <button class="link" type="button" data-go="chat">Home</button>
-      <button class="ico on" type="button" aria-label="Journal">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
-      </button>
-      <button class="link" type="button" data-go="menu">Menu</button>
-    </div>
+<section class="screen" id="journal">
+  <div class="top top-ruled">
+    <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
+    <div class="right navslot" data-here="journal"></div>
   </div>
   <div class="jbody">
-    <div class="cal">
-      <div class="monthbar">
-        <h1 id="j-month">August</h1>
-        <div class="nav">
-          <button type="button" id="j-prev" aria-label="Previous month">←</button>
-          <button type="button" id="j-next" aria-label="Next month" disabled>→</button>
-        </div>
-      </div>
-      <div class="stats">
-        <div class="stat hot"><b id="j-streak">0</b><span class="k">streak</span></div>
-        <div class="stat"><b id="j-month-count">0</b><span class="k">this month</span></div>
-        <div class="stat"><b id="j-all">0</b><span class="k">all time</span></div>
-      </div>
-      <div class="dow"><span>m</span><span>t</span><span>w</span><span>t</span><span>f</span><span>s</span><span>s</span></div>
-      <div class="grid" id="j-grid"></div>
+    <h1>Journal</h1>
+    <div class="stats">
+      <span class="s1">streak <b id="j-streak">0</b></span>
+      <span class="s2">this month <b id="j-month">0</b></span>
+      <span class="s3">all time <b id="j-all">0</b></span>
     </div>
-    <div class="entry">
-      <div class="date"><span class="d" id="j-date"></span><span class="hint" id="j-meta"></span></div>
-      <div id="j-entry-body"></div>
+    <div id="j-list"></div>
+    <div id="j-empty" class="j-empty" hidden>Nothing logged yet. Your first three things go on the home page.</div>
+  </div>
+</section>
+
+<!-- ══════════ ABOUT ══════════ -->
+<section class="screen" id="about">
+  <div class="top top-ruled">
+    <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
+    <div class="right navslot" data-here="about"></div>
+  </div>
+  <div class="abody">
+    <h1>Why this exists.</h1>
+    <p class="lede">Gratidude asks for three things you're grateful for, once a day, then gets out of your way. No streak confetti, no affirmations, no feed. You write three lines and carry on with your morning.</p>
+
+    <div class="sect">
+      <h2>From the person who built it</h2>
+      <blockquote>
+        <p>“I kept hearing how important gratitude is. Three things a day, life changing (apparently). But every app and journal I tried were insanely dull. Why can't it be at least mildly entertaining? That would make the habit actually stick. So I built Gratidude.”</p>
+        <p class="who">Founder, Gratidude</p>
+      </blockquote>
+    </div>
+
+    <div class="sect">
+      <h2>How it works</h2>
+      <ol>
+        <li><span>Open the page and write three things. Thirty seconds, tops.</span></li>
+        <li><span>They're saved for you — no account needed to start.</span></li>
+        <li><span>Come back tomorrow. The journal fills up whether you notice or not.</span></li>
+      </ol>
+      <p class="note">Make it your homepage and the habit takes care of itself: three things before the internet.</p>
+    </div>
+
+    <div class="sect">
+      <h2>Reminders</h2>
+      <div class="rowset">
+        <div class="row"><span>Daily reminder</span><button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-label="Daily reminder"></button></div>
+      </div>
+      <div class="times" id="rem-times"></div>
+      <div class="custom" id="rem-custom" hidden><label class="smallcaps" for="rem-ct">custom time</label><input id="rem-ct" type="time" value="20:00"></div>
+      <p class="note">One nudge a day, at the time you pick. Not wired up in the beta yet - this remembers your choice for when it is.</p>
+    </div>
+
+    <div class="sect">
+      <h2>Get in touch</h2>
+      <p>Something broken, or an idea? Tell us. Briefly.</p>
+      <form id="contact" autocomplete="off" onsubmit="return false">
+        <div class="field"><label class="smallcaps" for="c-email">email</label><input id="c-email" type="email" placeholder="you@example.com"></div>
+        <div class="field"><label class="smallcaps" for="c-msg">message</label><textarea id="c-msg" rows="4" placeholder="go on then"></textarea></div>
+        <button class="slab" id="c-send" type="submit">Send it</button>
+        <span id="c-ok" class="note" hidden></span>
+      </form>
+      <p class="note">Or email <a href="mailto:hello@gratidude.ai">hello@gratidude.ai</a>.</p>
+    </div>
+
+    <div class="afoot">
+      <span class="hint">Version 2.0 (web beta)</span>
     </div>
   </div>
 </section>
 
-<!-- ══════════ MENU ══════════ -->
-<section class="screen" id="screen-menu">
+<!-- ══════════ SIGN IN ══════════ -->
+<section class="screen" id="login">
   <div class="top">
-    <span class="mark">Gratidude</span>
-    <div class="right">
-      <button class="link" type="button" data-go="chat">Home</button>
-      <button class="ico" type="button" data-go="journal" aria-label="Journal">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.1" y="2.6" width="14.8" height="13.3"/><path d="M1.1 6.2h14.8M5.1 1v3.2M11.9 1v3.2"/></svg>
-      </button>
-    </div>
+    <button class="link" type="button" data-go="home">← back</button>
+    <div class="right navslot" data-here="account"></div>
   </div>
-  <div class="layout">
-    <div class="pane index on" id="menu-index">
-      <h1 class="big">Menu</h1>
-      <p class="lede">Everything that isn't the three things lives here.</p>
-
-      <div class="sect hot">the voice</div>
-      <div class="rows">
-        <button class="row" data-open="personality"><span class="lab">Personality</span><span class="val"><em id="v-personality"></em><span class="chev">›</span></span></button>
-        <button class="row" data-open="level"><span class="lab">Level</span><span class="val"><em id="v-level"></em><span class="chev">›</span></span></button>
-        <button class="row" data-open="sounds"><span class="lab">Sounds</span><span class="val"><em id="v-sounds"></em><span class="chev">›</span></span></button>
+  <div class="lbody">
+    <div class="aside">
+      <h1 class="wordmark" aria-label="Gratidude"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</h1>
+      <div class="rule"></div>
+      <h3>Build the habit:</h3>
+      <p>Create a free account to get notifications, save your entries, and text chat with Gratidude to improve your practice.</p>
+    </div>
+    <div class="form">
+      <div class="card" id="login-card">
+        <h2>Save your entries.</h2>
+        <div class="sub hint">enter your email - we'll send a link</div>
+        <form id="signin" autocomplete="off">
+          <div class="field"><label class="smallcaps" for="email">email</label><input id="email" type="email" placeholder="you@example.com" inputmode="email" required></div>
+          <div class="field-error" id="login-error"></div>
+          <button class="slab" type="submit" id="signin-btn">Send me a link</button>
+        </form>
+        <div class="linkrow"><button type="button" data-go="home">I'll do it later</button></div>
       </div>
-
-      <div class="sect">habit</div>
-      <div class="rows">
-        <button class="row" data-open="notifications"><span class="lab">Notifications</span><span class="val"><em id="v-notif"></em><span class="chev">›</span></span></button>
-      </div>
-
-      <div class="sect">account</div>
-      <div class="rows">
-        <button class="row" data-open="profile"><span class="lab">Profile</span><span class="val"><em id="v-profile"></em><span class="chev">›</span></span></button>
-      </div>
-
-      <div class="sect">elsewhere</div>
-      <div class="rows">
-        <button class="row" data-open="about"><span class="lab">About</span><span class="val"><span class="chev">›</span></span></button>
-        <button class="row" data-open="feedback"><span class="lab">Send feedback</span><span class="val"><span class="chev">›</span></span></button>
-        <button class="row" data-open="help"><span class="lab">Help</span><span class="val"><span class="chev">›</span></span></button>
+      <div class="card" id="login-sent" hidden>
+        <h2>Check your email.</h2>
+        <div class="sub hint">tap the link and you're in</div>
+        <p class="sent-note">I've sent a sign-in link to <b id="sent-to"></b>. It keeps everything you've written so far.</p>
       </div>
     </div>
-    <div class="pane detail" id="menu-detail"></div>
   </div>
 </section>
-
-<!-- ══════════ SIGN-UP PANEL ══════════ -->
-<div id="signup-panel" class="signup-panel" hidden>
-  <div class="wrap">
-    <div id="signup-view-prompt">
-      <p class="signup-heading" id="signup-heading">One down.</p>
-      <p class="signup-sub">Enter your email to keep your streak.</p>
-      <div class="field">
-        <label class="smallcaps" for="signup-email">email</label>
-        <input type="email" id="signup-email" autocomplete="email" placeholder="you@example.com" inputmode="email">
-        <div class="field-error" id="signup-error"></div>
-      </div>
-      <button class="slab full" id="signup-btn" disabled>Keep my streak.</button>
-      <div class="linkrow"><button type="button" class="skip" id="skip-signup">not now</button></div>
-    </div>
-    <div id="signup-view-sent" hidden>
-      <p class="signup-heading">Check your email.</p>
-      <p class="signup-sub">I've sent you a link. Click it to come back in.</p>
-    </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>

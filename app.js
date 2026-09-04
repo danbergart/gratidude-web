@@ -6,59 +6,19 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── Reference data (labels only; the prompts live server-side) ──────────────
-const PERSONALITIES = [
-  ['Sarcastic Drill Instructor', '“Right, that’s your lot. Go and live your life.”'],
-  ['Neutral', '“Logged. Three things, same time tomorrow.”'],
-  ['Sports Commentator', '“AND THEY’VE DONE IT - extraordinary scenes.”'],
-  ['Deluded Gym Bro', '“GRATITUDE GAINS. That’s a PB, brother.”'],
-  ['Terrible Pun Comedian', '“Thanks a bunch. Get it? Because gratitude.”'],
-];
-
-const LEVELS = [
-  ['First time', 'First go at this. Ease me in, anything counts.'],
-  ['A bit', 'Done it a few times. Keep me honest.'],
-  ['Experienced', 'Done this properly before. High bar, no coddling.'],
-];
-
-const TIMES = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
-
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'];
-
-// ── Session state ───────────────────────────────────────────────────────────
+// ── State ───────────────────────────────────────────────────────────────────
 let authSession = null;
 let anonId = null;
-let userState = { day: 1, streak: 0, grats_today: 0 };
-let settings = { personality: 0, level: 1, team: '', displayName: '', sounds: true, notifEnabled: false, reminderTime: '8:00 pm' };
-let journal = { entries: {}, since: null, stats: { streak: 0, allTime: 0 } };
-let journalLoaded = false;
-let viewMonth = new Date();
-let selectedDay = null;
+let current = { day: 1, streak: 0, doneToday: false, reminder: { enabled: false, time: '8:00 pm' } };
 
 const $ = (id) => document.getElementById(id);
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const REMINDER_PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
 
-// ── Screen routing ──────────────────────────────────────────────────────────
-const SCREENS = ['chat', 'journal', 'menu'];
-
-function show(name) {
-  SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('on', s === name));
-  // The rotator can only measure itself once its screen is actually on.
-  setRotator(name === 'chat' && chatScreen.classList.contains('opening'));
-  window.scrollTo(0, 0);
-  if (name === 'journal') loadJournal();
-}
-
-// ── Anonymous id ────────────────────────────────────────────────────────────
+// ── Anon id ─────────────────────────────────────────────────────────────────
 function getOrCreateAnonId() {
   let id = localStorage.getItem('gratidude_anon_id');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('gratidude_anon_id', id);
-  }
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('gratidude_anon_id', id); }
   return id;
 }
 
@@ -68,534 +28,236 @@ async function api(path, body = {}) {
   const payload = { ...body };
   if (authSession) headers.Authorization = `Bearer ${authSession.access_token}`;
   else payload.anonId = anonId;
-
   const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload) });
-  if (!res.ok) throw new Error(`${path} failed`);
+  if (!res.ok) { const e = new Error(path); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
   return res.json();
 }
 
-async function saveSettings(patch) {
-  settings = { ...settings, ...patch };
-  renderMenuValues();
-  try {
-    const data = await api('/api/settings', patch);
-    if (data.settings) settings = data.settings;
-  } catch { /* keep the optimistic value */ }
-}
-
-// ── Sound ───────────────────────────────────────────────────────────────────
-let audioCtx = null;
-function tick() {
-  if (!settings.sounds) return;
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.05, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
-    o.connect(g).connect(audioCtx.destination);
-    o.start();
-    o.stop(audioCtx.currentTime + 0.08);
-  } catch { /* audio is a nicety, never a blocker */ }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SHARED PICKER MARKUP
-══════════════════════════════════════════════════════════════ */
-const cardMarkup = (list, sel, key) => list.map(([nm, ex], i) =>
-  `<button class="card${i === sel ? ' chosen' : ''}" data-pick="${key}" data-i="${i}">
-     <span class="hd"><span class="nm">${esc(nm)}</span><span class="tag">chosen</span></span>
-     <p class="ex">${esc(ex)}</p>
-   </button>`).join('');
-
-/* ══════════════════════════════════════════════════════════════
-   ROTATING TAGLINE
-══════════════════════════════════════════════════════════════ */
-const ROTATE_WORDS = ['guys', 'dudes', 'lads', 'blokes', 'mandem'];
-const rotator = $('rotator');
-let rotWords = [];
-let rotAt = 0;
-let rotTimer = null;
-
-function drawRotator() {
-  rotator.innerHTML = ROTATE_WORDS.map((w, i) =>
-    `<span class="rw${i === 0 ? ' on' : ''}">${esc(w)}</span>`).join('');
-  rotWords = [...rotator.children];
-}
-
-// Absolutely-positioned words keep their natural width, so the box can follow them.
-function sizeRotator() {
-  const w = rotWords[rotAt]?.offsetWidth;
-  if (w) rotator.style.width = `${w}px`;
-}
-
-function stepRotator() {
-  const leaving = rotWords[rotAt];
-  rotAt = (rotAt + 1) % rotWords.length;
-  const arriving = rotWords[rotAt];
-  leaving.classList.replace('on', 'out');
-  arriving.classList.remove('out');
-  arriving.classList.add('on');
-  sizeRotator();
-}
-
-function setRotator(on) {
-  clearInterval(rotTimer);
-  rotTimer = null;
-  if (!on) return;
-  sizeRotator();
-  rotTimer = setInterval(stepRotator, 1800);
-}
-
-drawRotator();
-document.fonts?.ready.then(sizeRotator);
-
-/* ══════════════════════════════════════════════════════════════
-   HOME
-══════════════════════════════════════════════════════════════ */
-const chatScreen = $('screen-chat');
-const thread = $('thread');
-const sendBtn = $('send-btn');
-const composer = $('composer');
-const doneFooter = $('done-footer');
-const lines = [...document.querySelectorAll('#three .tin')];
-const composerError = $('composer-error');
-
-function appendAI(html, extra = '') {
-  const el = document.createElement('div');
-  el.className = `ai enter ${extra}`.trim();
-  el.innerHTML = html;
-  thread.appendChild(el);
-  scrollThread();
-  return el;
-}
-
-function appendTrio(items) {
-  const el = document.createElement('div');
-  el.className = 'user enter';
-  el.innerHTML = items.map((t, i) => `<span class="ti"><i>0${i + 1}</i>${esc(t)}</span>`).join('');
-  thread.appendChild(el);
-  scrollThread();
-  return el;
-}
-
-const scrollThread = () => { thread.scrollTop = thread.scrollHeight; };
-
-function updateChrome(state) {
-  if (!state) return;
-  userState = { ...userState, ...state };
-  $('streak-meta').innerHTML = userState.streak > 0
-    ? `day ${userState.day} · <b>streak ${userState.streak}</b>`
-    : `day ${userState.day}`;
-}
-
-function showDoneState() {
-  chatScreen.classList.remove('opening');
-  setRotator(false);
-  composer.hidden = true;
-  doneFooter.hidden = false;
-  thread.querySelectorAll('.user').forEach((u) => u.classList.add('spent'));
-}
-
-const readLines = () => lines.map((el) => el.value.trim());
-
-function refreshLines() {
-  const vals = readLines();
-  lines.forEach((el, i) => el.closest('.tline').classList.toggle('filled', !!vals[i]));
-  const n = vals.filter(Boolean).length;
-  sendBtn.textContent = n < 3 ? `${n} of 3` : 'Send';
-  sendBtn.disabled = n < 3;
-  composerError.hidden = true;
-}
-
-function resetLines() {
-  lines.forEach((el) => { el.value = ''; });
-  refreshLines();
-}
-
-function startChat() {
-  thread.innerHTML = '';
-  composer.hidden = false;
-  doneFooter.hidden = true;
-  chatScreen.classList.add('opening');
-  updateChrome(userState);
-  resetLines();
-  setRotator(true);
-  // On a phone an auto-focus just throws the keyboard over the headline.
-  if (window.innerWidth >= 900) lines[0].focus({ preventScroll: true });
-}
-
-/**
- * Three lines in, day done. Whatever they wrote is accepted on the spot - the
- * guide's reply is flavour that lands afterwards, never a gate.
- */
-async function submitThree() {
-  const items = readLines();
-  if (items.filter(Boolean).length < 3) return;
-
-  sendBtn.disabled = true;
-
-  const trio = appendTrio(items);
-  tick();
-
-  const streakNote = userState.streak > 0 ? ` That's ${userState.streak + 1} days.` : '';
-  const stamp = appendAI(`Day ${userState.day} complete.${streakNote}`, 'stamp');
-  showDoneState();
-
-  let data = null;
-  try {
-    data = await api('/api/chat', { items });
-  } catch { /* handled as a failed save below */ }
-
-  if (!data?.done) {
-    // Nothing was saved, so put them back exactly where they were.
-    trio.remove();
-    stamp.remove();
-    chatScreen.classList.add('opening');
-    setRotator(true);
-    composer.hidden = false;
-    doneFooter.hidden = true;
-    lines.forEach((el, i) => { el.value = items[i]; });
-    refreshLines();
-    composerError.textContent = data?.reply ?? "couldn't save that - try again";
-    composerError.hidden = false;
-    return;
-  }
-
-  if (data.settings) settings = data.settings;
-  updateChrome(data.userState);
-  journalLoaded = false;
-  resetLines();
-
-  if (data.reply) {
-    await delay(420);
-    appendAI(esc(data.reply));
-  }
-
-  if (data.requiresSignup) {
-    await delay(600);
-    showSignupPanel('One down.');
-  }
-}
-
-sendBtn.addEventListener('click', submitThree);
-
-lines.forEach((el, i) => {
-  el.addEventListener('input', refreshLines);
-  el.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    const next = lines[i + 1];
-    if (next && !e.metaKey && !e.ctrlKey) return next.focus();
-    if (!sendBtn.disabled) return submitThree();
-    lines.find((l) => !l.value.trim())?.focus();
-  });
-});
-
-$('go-journal').addEventListener('click', () => show('journal'));
-$('go-menu').addEventListener('click', () => show('menu'));
-
-/* ══════════════════════════════════════════════════════════════
-   JOURNAL
-══════════════════════════════════════════════════════════════ */
-async function loadJournal() {
-  if (!journalLoaded) {
-    try {
-      journal = await api('/api/journal');
-      journalLoaded = true;
-    } catch { /* render whatever we have */ }
-  }
-  renderMonth();
-}
-
-function renderMonth() {
-  const y = viewMonth.getFullYear();
-  const m = viewMonth.getMonth();
-  const now = new Date();
-  const isThisMonth = y === now.getFullYear() && m === now.getMonth();
-
-  $('j-month').textContent = MONTHS[m] + (y === now.getFullYear() ? '' : ` ${y}`);
-  $('j-next').disabled = isThisMonth;
-
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  // Grid starts Monday, so shift Sunday (0) to the end.
-  const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
-
-  let monthCount = 0;
-  const grid = $('j-grid');
-  grid.innerHTML = '';
-
-  for (let i = 0; i < startDow; i++) {
-    const b = document.createElement('div');
-    b.className = 'day blank';
-    grid.appendChild(b);
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const key = dateKey(new Date(y, m, d));
-    const entry = journal.entries[key];
-    const cellDate = new Date(y, m, d);
-    const isFuture = cellDate > now && !(isThisMonth && d === now.getDate());
-    const isToday = isThisMonth && d === now.getDate();
-    // Days before you started are inert, not failures.
-    const isPre = journal.since ? key < journal.since : false;
-    if (entry) monthCount++;
-
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = d;
-    b.dataset.key = key;
-    const mark = isFuture ? 'future' : isPre ? 'future' : entry ? 'has' : 'miss';
-    b.className = `day ${mark}${isToday ? ' today' : ''}`;
-    if (!isFuture && !isPre) b.addEventListener('click', () => selectDay(key));
-    grid.appendChild(b);
-  }
-
-  $('j-streak').textContent = journal.stats.streak ?? 0;
-  $('j-month-count').textContent = monthCount;
-  $('j-all').textContent = journal.stats.allTime ?? 0;
-
-  // Land on the most recent day with an entry in this month, else today.
-  const keys = Object.keys(journal.entries).filter((k) => k.startsWith(`${y}-${String(m + 1).padStart(2, '0')}`)).sort();
-  selectDay(selectedDay && journal.entries[selectedDay] ? selectedDay : (keys.pop() ?? dateKey(now)));
-}
-
-function selectDay(key) {
-  selectedDay = key;
-  document.querySelectorAll('#j-grid .day').forEach((x) => x.classList.toggle('sel', x.dataset.key === key));
-
-  const [y, m, d] = key.split('-').map(Number);
-  const nice = new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
-  $('j-date').textContent = nice;
-
-  const entry = journal.entries[key];
-  $('j-meta').textContent = entry ? `day ${entry.dayNum ?? ''}`.trim() : 'no entry';
-
-  const box = $('j-entry-body');
-  if (!entry || !entry.items?.length) {
-    box.innerHTML = '<p class="empty">Nothing. You didn’t show up that day.</p>';
-    return;
-  }
-  box.innerHTML = `<div class="stack">${entry.items.map((g, i) =>
-    `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(g)}</span></div>`).join('')}</div>`;
-}
-
-$('j-prev').addEventListener('click', () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1); selectedDay = null; renderMonth(); });
-$('j-next').addEventListener('click', () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); selectedDay = null; renderMonth(); });
-
-/* ══════════════════════════════════════════════════════════════
-   MENU
-══════════════════════════════════════════════════════════════ */
-const detail = $('menu-detail');
-
-const rowsWrap = (inner) => `<div class="rows">${inner}</div>`;
-const swRow = (label, on, key) =>
-  `<div class="row"><span class="lab">${label}</span><button class="sw" role="switch" aria-checked="${on}" data-tog="${key}" aria-label="${label}"></button></div>`;
-const navRow = (label, val) =>
-  `<div class="row"><span class="lab">${label}</span><span class="val"><em>${esc(val)}</em><span class="chev">›</span></span></div>`;
-
-const VIEWS = {
-  personality: () => ({
-    h: 'Meet your guide.',
-    l: 'Choose my personality. Change it whenever you like.',
-    b: cardMarkup(PERSONALITIES, settings.personality, 'personality'),
-  }),
-  level: () => ({
-    h: 'Have you done this before?',
-    l: 'Pick whatever fits. This sets how I talk to you - you can change it any time.',
-    b: cardMarkup(LEVELS, settings.level, 'level'),
-  }),
-  sounds: () => ({
-    h: 'Sounds',
-    l: 'The only noise I make.',
-    b: rowsWrap(swRow('Tap sound', settings.sounds, 'sounds')),
-  }),
-  notifications: () => ({
-    h: 'Notifications',
-    l: "Double your chances - I'll nudge you once a day.",
-    b: rowsWrap(swRow('Daily reminder', settings.notifEnabled, 'notifEnabled'))
-      + `<div class="times">${TIMES.map((t) =>
-        `<button class="time${t === settings.reminderTime ? ' on' : ''}" data-settime="${t}">${t}</button>`).join('')}</div>`
-      + `<p class="note">Browser reminders need permission and don't work on iOS unless you add the site to your home screen. Not wired up yet - this just remembers the time.</p>`,
-  }),
-  profile: () => ({
-    h: 'Profile',
-    b: `<div class="field"><label class="smallcaps" for="pf-name">what I call you</label><input id="pf-name" value="${esc(settings.displayName)}" placeholder="your name"></div>`
-      + `<div class="field"><label class="smallcaps" for="pf-team">team</label><input id="pf-team" value="${esc(settings.team)}" placeholder="go on, admit it"></div>`
-      + (authSession
-        ? rowsWrap(navRow('Email', authSession.user?.email ?? '') + '<button class="row dest" data-signout><span class="lab">Sign out</span></button>')
-        : rowsWrap('<button class="row" data-savejournal><span class="lab">Save my journal</span><span class="val"><em>not saved</em><span class="chev">›</span></span></button>')
-          + `<p class="note">Right now this lives in one browser. Add an email and it follows you anywhere.</p>`),
-    f: '<button class="slab full" data-saveprofile>Save.</button>',
-  }),
-  about: () => ({
-    h: 'About',
-    b: `<p class="lede">Gratidude asks for three things you're grateful for. No affirmations. No waffle. No bullshit.</p>`
-      + rowsWrap(navRow('Version', '2.0 (web beta)')),
-  }),
-  feedback: () => ({
-    h: 'Send feedback',
-    l: "Tell me what's wrong with me. Briefly.",
-    b: `<div class="field"><label class="smallcaps" for="fb-msg">message</label><input id="fb-msg" placeholder="go on then"></div><div id="fb-ok"></div>`,
-    f: '<button class="slab full" data-sendfeedback>Send it.</button>',
-  }),
-  help: () => ({
-    h: 'Help',
-    b: `<p class="lede">Three things a day. That's the whole thing.</p>`
-      + `<p class="note">Fill the three lines, hit send, day done. Whatever you write is taken as it is - nobody marks it. Showing up is the bit that counts.</p>`
-      + `<p class="note">Missed a day? The streak resets, nothing else. The journal keeps every day you did show up.</p>`,
-  }),
+// ── Icon nav ────────────────────────────────────────────────────────────────
+const ICONS = {
+  journal: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.6" y="3.1" width="14.8" height="13.3"/><path d="M1.6 6.7h14.8M5.6 1.5v3.2M12.4 1.5v3.2"/></svg>',
+  about:   '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="9" r="7.4"/><path d="M9 7.9v4.8M9 5.2v1.1"/></svg>',
+  account: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="6.4" r="3.1"/><path d="M2.9 16.4c0-3.4 2.7-5.2 6.1-5.2s6.1 1.8 6.1 5.2"/></svg>',
 };
 
-function openView(k) {
-  const v = VIEWS[k]();
-  detail.innerHTML = `<button class="back" data-back>← menu</button>`
-    + `<h1 class="big">${v.h}</h1>`
-    + (v.l ? `<p class="lede">${v.l}</p>` : '')
-    + v.b
-    + (v.f ? `<div class="menu-foot">${v.f}</div>` : '');
-  detail.dataset.k = k;
-  if (window.innerWidth < 900) {
-    $('menu-index').classList.remove('on');
-    detail.classList.add('on');
-  }
-}
-
-function renderMenuValues() {
-  $('v-personality').textContent = PERSONALITIES[settings.personality][0];
-  $('v-level').textContent = LEVELS[settings.level][0];
-  $('v-sounds').textContent = settings.sounds ? 'On' : 'Off';
-  $('v-notif').textContent = settings.notifEnabled ? settings.reminderTime : 'off';
-  $('v-profile').textContent = settings.displayName || (authSession ? 'signed in' : 'anonymous');
-}
-
-document.addEventListener('click', async (e) => {
-  // Cross-screen nav
-  const go = e.target.closest('[data-go]');
-  if (go) return show(go.dataset.go);
-
-  const open = e.target.closest('[data-open]');
-  if (open) return openView(open.dataset.open);
-
-  if (e.target.closest('[data-back]')) {
-    detail.classList.remove('on');
-    $('menu-index').classList.add('on');
-    return;
-  }
-
-  const pick = e.target.closest('[data-pick]');
-  if (pick) {
-    await saveSettings({ [pick.dataset.pick]: +pick.dataset.i });
-    openView(detail.dataset.k);
-    return;
-  }
-
-  const setTime = e.target.closest('[data-settime]');
-  if (setTime) {
-    await saveSettings({ reminderTime: setTime.dataset.settime });
-    openView('notifications');
-    return;
-  }
-
-  const swtch = e.target.closest('.sw');
-  if (swtch) {
-    const on = swtch.getAttribute('aria-checked') !== 'true';
-    swtch.setAttribute('aria-checked', on);
-    await saveSettings({ [swtch.dataset.tog]: on });
-    return;
-  }
-
-  if (e.target.closest('[data-saveprofile]')) {
-    await saveSettings({
-      displayName: $('pf-name').value.trim(),
-      team: $('pf-team').value.trim(),
-    });
-    const btn = e.target.closest('[data-saveprofile]');
-    btn.textContent = 'Saved.';
-    setTimeout(() => { btn.textContent = 'Save.'; }, 1400);
-    return;
-  }
-
-  if (e.target.closest('[data-savejournal]')) {
-    show('chat');
-    showSignupPanel('Save your journal.');
-    return;
-  }
-
-  if (e.target.closest('[data-signout]')) {
-    await sb.auth.signOut();
-    location.reload();
-    return;
-  }
-
-  if (e.target.closest('[data-sendfeedback]')) {
-    const msg = $('fb-msg').value.trim();
-    if (!msg) return;
-    try {
-      await api('/api/feedback', { message: msg });
-      $('fb-msg').value = '';
-      $('fb-ok').innerHTML = '<p class="ok-note">Got it.</p>';
-    } catch {
-      $('fb-ok').innerHTML = '<p class="msg-error">didn’t send. try again.</p>';
-    }
-  }
-});
-
-window.addEventListener('resize', () => {
-  if (window.innerWidth >= 900) {
-    $('menu-index').classList.add('on');
-    detail.classList.add('on');
-    if (!detail.dataset.k) openView('personality');
-  }
-});
-
-/* ══════════════════════════════════════════════════════════════
-   SIGN-UP
-══════════════════════════════════════════════════════════════ */
-const signupPanel = $('signup-panel');
-const signupEmail = $('signup-email');
-const signupBtn = $('signup-btn');
-
-function showSignupPanel(heading) {
-  $('signup-heading').textContent = heading;
-  $('signup-view-prompt').hidden = false;
-  $('signup-view-sent').hidden = true;
-  signupPanel.hidden = false;
-  signupEmail.focus();
-}
-
-const hideSignupPanel = () => { signupPanel.hidden = true; };
-
-signupEmail.addEventListener('input', () => {
-  signupBtn.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail.value.trim());
-  $('signup-error').textContent = '';
-});
-
-signupEmail.addEventListener('keydown', (e) => { if (e.key === 'Enter') signupBtn.click(); });
-
-signupBtn.addEventListener('click', async () => {
-  signupBtn.disabled = true;
-  signupBtn.textContent = 'Sending…';
-
-  const { error } = await sb.auth.signInWithOtp({
-    email: signupEmail.value.trim(),
-    options: { emailRedirectTo: window.location.origin },
+function paintNav() {
+  document.querySelectorAll('.navslot').forEach((slot) => {
+    const here = slot.dataset.here;
+    slot.innerHTML = ['journal', 'about', 'account'].map((k) => {
+      const dest = k === 'account' ? 'login' : k;
+      return `<button class="ico${here === k ? ' on' : ''}" type="button" data-go="${dest}" aria-label="${k === 'account' ? 'Account' : k[0].toUpperCase() + k.slice(1)}">${ICONS[k]}</button>`;
+    }).join('');
   });
+}
 
-  if (error) {
-    $('signup-error').textContent = "didn't catch that. try again.";
-    signupBtn.disabled = false;
-    signupBtn.textContent = 'Keep my streak.';
-    return;
-  }
+// ── Screen routing ──────────────────────────────────────────────────────────
+const SCREENS = ['home', 'done', 'journal', 'about', 'login'];
 
-  $('signup-view-prompt').hidden = true;
-  $('signup-view-sent').hidden = false;
+function show(name) {
+  SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
+  window.scrollTo(0, 0);
+  if (name === 'home') { resetHome(); $('g1').focus(); }
+  if (name === 'journal') loadJournal();
+}
+
+document.addEventListener('click', (e) => {
+  const go = e.target.closest('[data-go]');
+  if (go) { e.preventDefault(); show(go.dataset.go); }
 });
 
-$('skip-signup').addEventListener('click', hideSignupPanel);
+// ── Home ────────────────────────────────────────────────────────────────────
+const gs = () => [$('g1'), $('g2'), $('g3')];
+const filled = () => gs().every((i) => i.value.trim());
 
+function resetHome() {
+  $('daycount').textContent = `day ${current.day}`;
+  if (current.doneToday) { gs().forEach((i, n) => { i.value = (current.todayItems?.[n] ?? ''); }); }
+  $('submit').disabled = !filled();
+}
+
+gs().forEach((el, i) => {
+  el.addEventListener('input', () => { $('submit').disabled = !filled(); });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { if (!$('submit').disabled) $('submit').click(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (i < 2) gs()[i + 1].focus(); else if (!$('submit').disabled) $('submit').click(); }
+  });
+});
+
+$('box').addEventListener('click', (e) => { if (!e.target.matches('input')) $('g1').focus(); });
+
+$('submit').addEventListener('click', async () => {
+  if (!filled()) return;
+  const items = gs().map((i) => i.value.trim());
+  $('submit').disabled = true;
+  try {
+    const data = await api('/api/submit', { items });
+    current = { ...current, ...data, monthCount: (current.monthCount ?? 0) + 1 };
+    renderDone(items);
+    show('done');
+  } catch {
+    $('submit').disabled = false;
+    // Fall back to showing the logged state locally so nothing feels lost.
+    renderDone(items);
+    show('done');
+  }
+});
+
+// ── Done ────────────────────────────────────────────────────────────────────
+function renderDone(items) {
+  $('streak').innerHTML = current.streak > 0
+    ? `day ${current.day} · <b>streak ${current.streak}</b>`
+    : `day ${current.day}`;
+  $('logged').innerHTML = items.map((t, i) =>
+    `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
+  $('mcount').textContent = `${current.monthCount ?? 0} this month`;
+
+  const recent = current.recent ?? [];
+  $('recent').innerHTML = recent.map((r) => {
+    const nice = fmtRecent(r.date);
+    const first = (r.items?.[0] ?? '').trim();
+    return `<div class="r"><span class="rd">${nice}</span><span class="rt">${esc(first)}…</span></div>`;
+  }).join('');
+  $('recent').parentElement.hidden = recent.length === 0;
+}
+
+function fmtRecent(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+}
+
+// ── Journal ─────────────────────────────────────────────────────────────────
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function fmtDay(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
+}
+
+async function loadJournal() {
+  let data;
+  try { data = await api('/api/journal'); }
+  catch { data = { entries: [], stats: { streak: current.streak, thisMonth: 0, allTime: 0 } }; }
+
+  $('j-streak').textContent = data.stats.streak ?? 0;
+  $('j-month').textContent = data.stats.thisMonth ?? 0;
+  $('j-all').textContent = data.stats.allTime ?? 0;
+
+  const list = $('j-list');
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  if (!data.entries.length) { list.innerHTML = ''; $('j-empty').hidden = false; return; }
+  $('j-empty').hidden = true;
+
+  let html = '';
+  let lastMonth = '';
+  for (const e of data.entries) {
+    const [y, m] = e.date.split('-').map(Number);
+    const label = `${MONTHS[m - 1]} ${y}`;
+    if (label !== lastMonth) { html += `<p class="mlabel">${label}</p>`; lastMonth = label; }
+    const todayTag = e.date === todayIso ? ' <em>· today</em>' : '';
+    html += `<div class="entry"><div class="ehd"><span class="d">${fmtDay(e.date)}${todayTag}</span><span class="m">day ${e.dayNum ?? ''}</span></div>`
+      + (e.items || []).map((g, i) => `<div class="jg n${i + 1}"><span class="n">0${i + 1}</span><span class="t">${esc(g)}</span></div>`).join('')
+      + `</div>`;
+  }
+  list.innerHTML = html;
+}
+
+// ── About: reminders ────────────────────────────────────────────────────────
+function paintReminder() {
+  const { enabled, time } = current.reminder;
+  $('rem-sw').setAttribute('aria-checked', enabled);
+  const isCustom = !REMINDER_PRESETS.includes(time);
+  const chips = [...REMINDER_PRESETS, 'Custom'];
+  $('rem-times').innerHTML = chips.map((t) => {
+    const on = t === 'Custom' ? isCustom : t === time;
+    return `<button class="time${on ? ' on' : ''}" type="button" data-rem="${t}">${t}</button>`;
+  }).join('');
+  $('rem-times').classList.toggle('off', !enabled);
+  const custom = $('rem-custom');
+  custom.hidden = !isCustom;
+  custom.classList.toggle('off', !enabled);
+  if (isCustom) $('rem-ct').value = /^\d{2}:\d{2}$/.test(time) ? time : '20:00';
+}
+
+async function saveReminder(patch) {
+  current.reminder = { ...current.reminder, ...patch };
+  paintReminder();
+  try { const d = await api('/api/settings', current.reminder); if (d.reminder) current.reminder = d.reminder; }
+  catch { /* keep optimistic value */ }
+}
+
+$('rem-sw').addEventListener('click', () => {
+  saveReminder({ enabled: current.reminder.enabled ? false : requestNotifyThenTrue() });
+});
+// Ask for notification permission the moment they turn it on (never on load).
+function requestNotifyThenTrue() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+  return true;
+}
+
+$('rem-times').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rem]');
+  if (!b) return;
+  if (b.dataset.rem === 'Custom') { saveReminder({ time: $('rem-ct').value || '20:00' }); setTimeout(() => $('rem-ct').focus(), 0); }
+  else saveReminder({ time: b.dataset.rem });
+});
+$('rem-ct').addEventListener('change', () => saveReminder({ time: $('rem-ct').value }));
+
+// ── About: contact ──────────────────────────────────────────────────────────
+$('contact').addEventListener('submit', async () => {
+  const msg = $('c-msg').value.trim();
+  const email = $('c-email').value.trim();
+  if (!msg) return;
+  $('c-send').disabled = true;
+  try {
+    await api('/api/feedback', { message: email ? `${email}: ${msg}` : msg });
+    $('c-msg').value = ''; $('c-email').value = '';
+    const ok = $('c-ok'); ok.textContent = 'Got it. Cheers.'; ok.hidden = false;
+  } catch {
+    const ok = $('c-ok'); ok.textContent = "Didn't send - try the email link below."; ok.hidden = false;
+  }
+  $('c-send').disabled = false;
+});
+
+// ── Login: magic link ───────────────────────────────────────────────────────
+$('signin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('login-error').textContent = 'that email looks off'; return; }
+  const btn = $('signin-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+  if (error) {
+    $('login-error').textContent = "didn't send. try again.";
+    btn.disabled = false; btn.textContent = 'Send me a link';
+    return;
+  }
+  $('sent-to').textContent = email;
+  $('login-card').hidden = true;
+  $('login-sent').hidden = false;
+});
+
+// ── Rotating word (home) ────────────────────────────────────────────────────
+(function rotor() {
+  const slot = $('slot'), reel = slot.querySelector('.reel');
+  const words = ['guys', 'dudes', 'blokes', 'mandem', 'lads', 'yoga-haters', 'bad bitches', 'rationalists'].sort(() => Math.random() - 0.5);
+  const cls = words.map((_, i) => 'w' + (i % 5 + 1));
+  reel.innerHTML = words.concat(words[0]).map((w, i) => `<span class="${i < words.length ? cls[i] : cls[0]}">${w}</span>`).join('');
+  slot.setAttribute('aria-label', words[0]);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let si = 0;
+  setInterval(() => {
+    si++;
+    reel.style.transition = 'transform .42s cubic-bezier(.4,0,.2,1)';
+    reel.style.transform = `translateY(-${si * 1.2}em)`;
+    slot.setAttribute('aria-label', words[si % words.length]);
+    if (si === words.length) setTimeout(() => { reel.style.transition = 'none'; reel.style.transform = 'none'; si = 0; }, 440);
+  }, 1600);
+})();
+
+// ── Auth transfer + boot ────────────────────────────────────────────────────
 async function activate(session) {
   try {
     await fetch('/api/activate', {
@@ -607,72 +269,33 @@ async function activate(session) {
   history.replaceState(null, '', window.location.pathname);
 }
 
-sb.auth.onAuthStateChange(async (_event, session) => {
+sb.auth.onAuthStateChange(async (_e, session) => {
   if (!session || authSession?.access_token === session.access_token) return;
   authSession = session;
   await activate(session);
-  hideSignupPanel();
-  journalLoaded = false;
   await boot();
 });
 
-/* ══════════════════════════════════════════════════════════════
-   BOOT
-══════════════════════════════════════════════════════════════ */
 async function boot() {
-  let init = null;
-  try {
-    init = await api('/api/chat', { message: '__init__' });
-  } catch { /* brand new session */ }
+  let state = null;
+  try { state = await api('/api/state'); } catch { /* fresh, offline, or brand new */ }
+  if (state) current = { ...current, ...state };
 
-  if (init?.settings) settings = init.settings;
-  if (init?.userState) userState = init.userState;
-  renderMenuValues();
-  // The desktop detail pane may have rendered before settings arrived.
-  if (detail.dataset.k) openView(detail.dataset.k);
+  paintReminder();
 
-  // Anonymous and coming back on a later day: they must sign up to carry on.
-  if (init?.requiresSignup && init?.daysDone && !authSession) {
-    show('chat');
-    chatScreen.classList.remove('opening');
-    thread.innerHTML = '';
-    composer.hidden = true;
-    doneFooter.hidden = true;
-    appendAI("You're back. Enter your email to keep your streak.");
-    showSignupPanel("You're back.");
-    return;
+  if (current.doneToday) {
+    renderDone(current.todayItems ?? []);
+    show('done');
+  } else {
+    show('home');
   }
-
-  show('chat');
-
-  if (init?.done) {
-    chatScreen.classList.remove('opening');
-    thread.innerHTML = '';
-    updateChrome(userState);
-    const streakNote = userState.streak > 1 ? ` ${userState.streak} days.` : '';
-    appendAI(`Done for today.${streakNote} See you tomorrow.`);
-    showDoneState();
-    // Still anonymous: a soft nudge, not a wall.
-    if (init.requiresSignup && !authSession) {
-      await delay(600);
-      showSignupPanel('One down.');
-    }
-    return;
-  }
-
-  startChat();
 }
 
 async function init() {
   anonId = getOrCreateAnonId();
-
+  paintNav();
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    authSession = session;
-    await activate(session);
-  }
-
-  if (window.innerWidth >= 900) openView('personality');
+  if (session) { authSession = session; await activate(session); }
   await boot();
 }
 

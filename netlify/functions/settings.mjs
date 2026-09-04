@@ -1,12 +1,8 @@
-import { supabase, json, preflight, loadSession, publicSettings } from '../lib/session.mjs';
-import { PERSONALITIES, LEVELS, REMINDER_TIMES } from '../lib/persona.mjs';
+// v2 keeps a single setting: the daily reminder.
+import { supabase, json, preflight, loadSession } from '../lib/session.mjs';
 
-const clampInt = (v, max) => {
-  const n = Number(v);
-  return Number.isInteger(n) && n >= 0 && n < max ? n : null;
-};
-
-const clampText = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : null);
+const PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
+const isTime = (v) => typeof v === 'string' && (PRESETS.includes(v) || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v));
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return preflight();
@@ -18,31 +14,13 @@ export default async (req) => {
   const { state, table, id } = session;
   const patch = {};
 
-  const personality = clampInt(body.personality, PERSONALITIES.length);
-  if (personality !== null) patch.personality = personality;
+  if (typeof body.enabled === 'boolean') patch.notif_enabled = body.enabled;
+  if (isTime(body.time)) patch.reminder_time = body.time;
 
-  const level = clampInt(body.level, LEVELS.length);
-  if (level !== null) patch.level = level;
+  if (Object.keys(patch).length) await supabase.from(table).update(patch).eq('id', id);
 
-  const team = clampText(body.team, 60);
-  if (team !== null) patch.team = team;
-
-  const displayName = clampText(body.displayName, 40);
-  if (displayName !== null) patch.display_name = displayName;
-
-  if (typeof body.sounds === 'boolean') patch.sounds = body.sounds;
-  if (typeof body.notifEnabled === 'boolean') patch.notif_enabled = body.notifEnabled;
-  if (typeof body.onboarded === 'boolean') patch.onboarded = body.onboarded;
-
-  if (typeof body.reminderTime === 'string' && REMINDER_TIMES.includes(body.reminderTime)) {
-    patch.reminder_time = body.reminderTime;
-  }
-
-  if (Object.keys(patch).length) {
-    await supabase.from(table).update(patch).eq('id', id);
-  }
-
-  return json({ settings: publicSettings({ ...state, ...patch }) });
+  const next = { ...state, ...patch };
+  return json({ reminder: { enabled: next.notif_enabled ?? false, time: next.reminder_time ?? '8:00 pm' } });
 };
 
 export const config = { path: '/api/settings' };
