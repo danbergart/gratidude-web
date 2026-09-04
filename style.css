@@ -94,9 +94,9 @@ a.slab { text-decoration: none; color: var(--ink); }
 /* ══════════════════════════════════
    HOME
 ══════════════════════════════════ */
-#home .mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px 20px; }
+#home .mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
 /* Left-aligned column, centred on the page - matches the About page feel. */
-.home-inner { width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.home-inner { width: 100%; max-width: 520px; padding: 0 24px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .mark-big { font-family: var(--serif); font-size: clamp(46px, 13vw, 82px); letter-spacing: -.035em; line-height: 1; margin: 0 0 8px; font-weight: 400; user-select: none; }
 .mark-big i { font-style: normal; }
 .tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 32px; white-space: nowrap; }
@@ -124,9 +124,8 @@ a.slab { text-decoration: none; color: var(--ink); }
 .btns { display: flex; gap: 12px; justify-content: flex-start; margin-top: 22px; flex-wrap: wrap; }
 .metarow { display: flex; gap: 18px; justify-content: flex-start; margin-top: 22px; }
 
-/* Home footer */
-.site-foot { margin-top: auto; border-top: 1px solid var(--ruleSoft); padding: 20px 0 30px; text-align: left; }
-.site-foot.wrap { max-width: 520px; }
+/* Home footer - shares the home block's 520 column so edges line up. */
+.site-foot { width: 100%; max-width: 520px; margin: auto auto 0; padding: 20px 24px 30px; border-top: 1px solid var(--ruleSoft); text-align: left; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 16px 20px; }
 .site-foot a, .foot-link { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: #55524a; background: none; border: 0; padding: 0; text-decoration: none; cursor: pointer; }
 .site-foot a:hover, .foot-link:hover { color: var(--link); }
