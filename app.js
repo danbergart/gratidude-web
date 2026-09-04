@@ -23,12 +23,12 @@ function getOrCreateAnonId() {
 }
 
 // ── API ─────────────────────────────────────────────────────────────────────
-async function api(path, body = {}) {
+async function api(path, body = {}, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const payload = { ...body };
   if (authSession) headers.Authorization = `Bearer ${authSession.access_token}`;
   else payload.anonId = anonId;
-  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload) });
+  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload), signal: opts.signal });
   if (!res.ok) { const e = new Error(path); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
   return res.json();
 }
@@ -103,7 +103,26 @@ $('submit').addEventListener('click', async () => {
 });
 
 // ── Done ────────────────────────────────────────────────────────────────────
+// Rotating confirmation heading - deterministic by day number, dry, never keen.
+const HEADINGS = [
+  'Logged.', 'Logged. Slow clap.', 'Logged. Barely.', 'Logged, obviously.',
+  'Logged. Steady on.', 'Noted.', 'Filed.', 'Filed away.', 'On the record.',
+  'Duly noted.', 'Received.', 'In the book.', "That'll do.", 'Fine. Logged.',
+  'Counted.', 'Banked.', 'Stamped.', 'Three things, logged.',
+  'Recorded, reluctantly.', 'Sorted.', 'Down in writing.', 'Logged. Look at you.',
+  'Done and logged.', 'Accepted.',
+];
+const MILESTONES = { 1: 'First one down.', 7: 'A week of this.', 30: 'Thirty days.', 100: 'One hundred.' };
+
+function pickHeading(dayNum) {
+  const d = Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1;
+  if (MILESTONES[d]) return MILESTONES[d];
+  if (d > 100 && d % 50 === 0) return `Day ${d}.`;
+  return HEADINGS[d % HEADINGS.length];
+}
+
 function renderDone(items) {
+  $('done-head').textContent = pickHeading(current.todayDayNum ?? current.day);
   $('streak').innerHTML = current.streak > 0
     ? `day ${current.day} · <b>streak ${current.streak}</b>`
     : `day ${current.day}`;
@@ -127,6 +146,35 @@ function renderDone(items) {
     return `<div class="r"><span class="rd">${nice}</span><span class="rt">${esc(first)}…</span></div>`;
   }).join('');
   $('recent').parentElement.hidden = recent.length === 0;
+
+  handleNote();
+}
+
+// The AI margin note: never blocks the screen, 4s timeout, fails silent, once/day.
+function showNote(text, fade) {
+  if (!text) { $('note').hidden = true; return; }
+  $('note-text').textContent = `“${text}”`;
+  $('note').hidden = false;
+  if (fade) { $('note').classList.remove('in'); void $('note').offsetWidth; $('note').classList.add('in'); }
+}
+
+async function handleNote() {
+  $('note').hidden = true;
+  $('note').classList.remove('in');
+
+  // Already have it (reload of a day whose note was generated): show at once.
+  if (current.noteReady) { showNote(current.todayNote, false); return; }
+
+  // Otherwise fetch once, with a hard 4s ceiling. Any failure = empty margin.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const data = await api('/api/note', {}, { signal: ctrl.signal });
+    current.noteReady = true;
+    current.todayNote = data.note ?? null;
+    showNote(current.todayNote, true);
+  } catch { /* silent - a note-less Logged screen is complete */ }
+  finally { clearTimeout(timer); }
 }
 
 function fmtRecent(iso) {

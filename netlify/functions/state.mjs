@@ -23,7 +23,7 @@ export default async (req) => {
   }
 
   // Entries for counts + recent list.
-  const sel = supabase.from('entries').select('entry_date, items, day_num').order('entry_date', { ascending: false });
+  const sel = supabase.from('entries').select('entry_date, items, day_num, note, note_generated').order('entry_date', { ascending: false });
   const { data: rows } = userId ? await sel.eq('user_id', id) : await sel.eq('anon_id', id);
   const entries = rows ?? [];
 
@@ -44,6 +44,9 @@ export default async (req) => {
     streak: state.streak,
     doneToday,
     todayItems: todayRow?.items ?? [],
+    todayDayNum: todayRow?.day_num ?? state.day,
+    todayNote: todayRow?.note ?? null,
+    noteReady: todayRow?.note_generated ?? false,
     recent,
     resurfaced: doneToday ? pickResurfaced(entries, today) : null,
     monthCount,

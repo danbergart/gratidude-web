@@ -21,11 +21,22 @@ export default async (req) => {
   }
 
   if (state.day_closed) {
-    // Already logged today - return current state, don't double-count.
-    const { data: existing } = await (userId
-      ? supabase.from('entries').select('items').eq('user_id', id).eq('entry_date', today).single()
-      : supabase.from('entries').select('items').eq('anon_id', id).eq('entry_date', today).single());
-    return json({ day: state.day, streak: state.streak, doneToday: true, todayItems: existing?.items ?? [] });
+    // Already logged today - return the stored day without double-counting.
+    const owner0 = userId ? { user_id: id } : { anon_id: id };
+    const { data: existing } = await supabase
+      .from('entries').select('items, day_num, note, note_generated').match({ ...owner0, entry_date: today }).single();
+    const { data: pastRows } = await supabase
+      .from('entries').select('entry_date, items').match(owner0).neq('entry_date', today);
+    return json({
+      day: state.day,
+      todayDayNum: existing?.day_num ?? state.day,
+      streak: state.streak,
+      doneToday: true,
+      todayItems: existing?.items ?? [],
+      resurfaced: pickResurfaced(pastRows ?? [], today),
+      noteReady: existing?.note_generated ?? false,
+      todayNote: existing?.note ?? null,
+    });
   }
 
   const three = (Array.isArray(items) ? items : []).map(clean).filter(Boolean).slice(0, 3);
@@ -55,7 +66,7 @@ export default async (req) => {
     last_session_date: today,
   }).eq('id', id);
 
-  return json({ day: dayNum, streak: newStreak, doneToday: true, todayItems: three, resurfaced });
+  return json({ day: dayNum, todayDayNum: dayNum, streak: newStreak, doneToday: true, todayItems: three, resurfaced, noteReady: false });
 };
 
 export const config = { path: '/api/submit' };

@@ -139,6 +139,20 @@ a.slab { text-decoration: none; color: var(--ink); }
 #done h2 { font-family: var(--serif); font-size: clamp(26px, 6vw, 34px); letter-spacing: -.02em; font-weight: 400; margin: 0; text-align: center; }
 #done .sub { margin: 0; text-align: center; color: var(--soft); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
 
+/* Logged entries + AI margin note */
+.logrow { width: 100%; max-width: 600px; display: flex; gap: 22px; align-items: flex-start; }
+.logrow .logged { flex: 1; max-width: none; }
+.note { flex: 0 0 180px; border-left: 2px solid var(--mustard); padding-left: 14px; }
+.note-text { font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 1.4; color: var(--soft); text-wrap: pretty; }
+.note-by { display: block; font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .18em; color: #b6b3ac; margin-top: 8px; }
+.note.in { animation: noteIn .2s ease-out both; }
+@keyframes noteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 719px) {
+  .logrow { flex-direction: column; gap: 16px; }
+  .note { order: -1; flex: 1 1 auto; width: 100%; max-width: 34ch; }
+}
+@media (prefers-reduced-motion: reduce) { .note.in { animation: none; } }
+
 .logged { width: 100%; max-width: 440px; }
 .logged .g { display: flex; gap: 14px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--ruleSoft); }
 .logged .g:last-child { border-bottom: 0; }
