@@ -124,10 +124,13 @@ a.slab { text-decoration: none; color: var(--ink); }
 .btns { display: flex; gap: 12px; justify-content: flex-start; margin-top: 22px; flex-wrap: wrap; }
 .metarow { display: flex; gap: 18px; justify-content: flex-start; margin-top: 22px; }
 
-.pitch { padding-top: 0; padding-bottom: 30px; text-align: left; border-top: 1px solid var(--ruleSoft); margin-top: auto; }
-.pitch.wrap { max-width: 520px; }
-.pitch h3 { margin: 18px 0 7px; font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; color: var(--moss); }
-.pitch p { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.65; color: #5f5c53; max-width: none; text-wrap: pretty; }
+/* Home footer */
+.site-foot { margin-top: auto; border-top: 1px solid var(--ruleSoft); padding: 20px 0 30px; text-align: left; }
+.site-foot.wrap { max-width: 520px; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 16px 20px; }
+.site-foot a, .foot-link { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: #55524a; background: none; border: 0; padding: 0; text-decoration: none; cursor: pointer; }
+.site-foot a:hover, .foot-link:hover { color: var(--link); }
+.foot-by { margin: 14px 0 0; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--faint); }
 
 /* ══════════════════════════════════
    DONE

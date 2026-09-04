@@ -42,19 +42,20 @@ function paintNav() {
     const here = slot.dataset.here;
     slot.innerHTML =
       `<button class="link${here === 'journal' ? ' on' : ''}" type="button" data-go="journal">history</button>`
-      + `<button class="link${here === 'about' ? ' on' : ''}" type="button" data-go="about">options</button>`
+      + `<button class="link${here === 'habit' ? ' on' : ''}" type="button" data-go="habit">build the habit</button>`
       + `<button class="ico${here === 'account' ? ' on' : ''}" type="button" data-go="login" aria-label="Account">${PERSON_ICON}</button>`;
   });
 }
 
 // ── Screen routing ──────────────────────────────────────────────────────────
-const SCREENS = ['home', 'done', 'journal', 'about', 'login'];
+const SCREENS = ['home', 'done', 'journal', 'habit', 'about', 'login'];
 
 function show(name) {
   SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
   window.scrollTo(0, 0);
   if (name === 'home') { resetHome(); $('g1').focus(); }
   if (name === 'journal') loadJournal();
+  if (name === 'habit') paintReminder();
   if (name === 'login') paintLogin();
 }
 

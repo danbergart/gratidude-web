@@ -31,10 +31,15 @@
       <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
     </div>
   </div>
-  <div class="pitch wrap">
-    <h3>Build the habit:</h3>
-    <p><a href="#login" data-go="login">Create a free account</a> to get notifications, save your entries, and text chat with Gratidude to improve your practice.</p>
-  </div>
+  <footer class="site-foot wrap">
+    <nav class="foot-links">
+      <button class="foot-link" type="button" data-go="about">About</button>
+      <a href="mailto:hello@gratidude.ai">Contact</a>
+      <a href="mailto:hello@gratidude.ai?subject=Gratidude%20bug%20report">Report a bug</a>
+      <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
+    </nav>
+    <p class="foot-by">by Dan Berg</p>
+  </footer>
 </section>
 
 <!-- ══════════ DONE ══════════ -->
@@ -82,11 +87,44 @@
   </div>
 </section>
 
+<!-- ══════════ BUILD THE HABIT ══════════ -->
+<section class="screen" id="habit">
+  <div class="top top-ruled">
+    <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
+    <div class="right navslot" data-here="habit"></div>
+  </div>
+  <div class="abody">
+    <h1>Build the habit.</h1>
+    <p class="lede">Three things a day only does anything if you actually come back. Three ways to make that automatic.</p>
+
+    <div class="sect">
+      <h2>Daily reminder</h2>
+      <div class="rowset">
+        <div class="row"><span>Daily reminder</span><button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-label="Daily reminder"></button></div>
+      </div>
+      <div class="times" id="rem-times"></div>
+      <div class="custom" id="rem-custom" hidden><label class="smallcaps" for="rem-ct">custom time</label><input id="rem-ct" type="time" value="20:00"></div>
+      <p class="note">One nudge a day, at the time you pick. Not wired up in the beta yet - this remembers your choice for when it is.</p>
+    </div>
+
+    <div class="sect">
+      <h2>Make it your homepage</h2>
+      <p>Set Gratidude as your browser's homepage or new-tab page, and you'll write three things before the internet gets its hooks in.</p>
+      <p class="note">A page can't set this itself - open your browser settings, find "Homepage" or "On startup", and paste <b>gratidude.ai</b>.</p>
+    </div>
+
+    <div class="sect">
+      <h2>Add it to your phone</h2>
+      <p>Open <b>gratidude.ai</b> in your phone's browser, tap Share, then "Add to Home Screen". You get a one-tap icon that opens straight to today.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ══════════ ABOUT ══════════ -->
 <section class="screen" id="about">
   <div class="top top-ruled">
     <button class="mark" type="button" data-go="home" aria-label="Gratidude — home"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</button>
-    <div class="right navslot" data-here="about"></div>
+    <div class="right navslot" data-here=""></div>
   </div>
   <div class="abody">
     <h1>Why this exists.</h1>
@@ -108,16 +146,6 @@
         <li><span>Come back tomorrow. The journal fills up whether you notice or not.</span></li>
       </ol>
       <p class="note">Make it your homepage and the habit takes care of itself: three things before the internet.</p>
-    </div>
-
-    <div class="sect">
-      <h2>Reminders</h2>
-      <div class="rowset">
-        <div class="row"><span>Daily reminder</span><button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-label="Daily reminder"></button></div>
-      </div>
-      <div class="times" id="rem-times"></div>
-      <div class="custom" id="rem-custom" hidden><label class="smallcaps" for="rem-ct">custom time</label><input id="rem-ct" type="time" value="20:00"></div>
-      <p class="note">One nudge a day, at the time you pick. Not wired up in the beta yet - this remembers your choice for when it is.</p>
     </div>
 
     <div class="sect">
