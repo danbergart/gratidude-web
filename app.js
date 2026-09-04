@@ -133,14 +133,6 @@ function renderDone(items) {
   $('done-head').textContent = pickHeading(current.todayDayNum ?? current.day);
   $('logged').innerHTML = items.map((t, i) =>
     `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
-  const r = current.resurfaced;
-  if (r && r.item) {
-    $('echo-label').textContent = r.label;
-    $('echo-text').textContent = `“${r.item}”`;
-    $('echo').hidden = false;
-  } else {
-    $('echo').hidden = true;
-  }
 
   $('mcount').textContent = `${current.monthCount ?? 0} this month`;
 
@@ -155,30 +147,33 @@ function renderDone(items) {
   handleNote();
 }
 
-// The AI margin note: never blocks the screen, 4s timeout, fails silent, once/day.
-function showNote(text, fade) {
-  if (!text) { $('note').hidden = true; return; }
-  $('note-text').textContent = `“${text}”`;
-  $('note').hidden = false;
-  if (fade) { $('note').classList.remove('in'); void $('note').offsetWidth; $('note').classList.add('in'); }
+// The AI line, promoted to the hero of the Logged screen. Until it arrives (or
+// if it never does), the small "that's today done" sub-line stands in.
+function showQuote(text, fade) {
+  if (!text) { $('quote').hidden = true; $('done-sub').hidden = false; return; }
+  $('quote-text').textContent = `“${text}”`;
+  $('done-sub').hidden = true;
+  $('quote').hidden = false;
+  if (fade) { $('quote').classList.remove('in'); void $('quote').offsetWidth; $('quote').classList.add('in'); }
 }
 
 async function handleNote() {
-  $('note').hidden = true;
-  $('note').classList.remove('in');
+  $('quote').hidden = true;
+  $('quote').classList.remove('in');
+  $('done-sub').hidden = false;
 
   // Already have it (reload of a day whose note was generated): show at once.
-  if (current.noteReady) { showNote(current.todayNote, false); return; }
+  if (current.noteReady) { showQuote(current.todayNote, false); return; }
 
-  // Otherwise fetch once, with a hard 4s ceiling. Any failure = empty margin.
+  // Otherwise fetch once, with a hard 4s ceiling. Any failure keeps the sub-line.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
   try {
     const data = await api('/api/note', {}, { signal: ctrl.signal });
     current.noteReady = true;
     current.todayNote = data.note ?? null;
-    showNote(current.todayNote, true);
-  } catch { /* silent - a note-less Logged screen is complete */ }
+    showQuote(current.todayNote, true);
+  } catch { /* silent - the sub-line remains, screen is complete */ }
   finally { clearTimeout(timer); }
 }
 
