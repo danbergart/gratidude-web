@@ -32,12 +32,19 @@ export default async (req) => {
   const monthPrefix = today.slice(0, 7);
   const monthCount = entries.filter((e) => e.entry_date.startsWith(monthPrefix)).length;
 
+  // "Earlier this week" should only hold genuinely recent days.
+  const weekAgo = new Date(Date.now() - 8 * 86400000).toISOString().slice(0, 10);
+  const recent = entries
+    .filter((e) => e.entry_date !== today && e.entry_date >= weekAgo)
+    .slice(0, 5)
+    .map((e) => ({ date: e.entry_date, items: e.items }));
+
   return json({
     day: state.day,
     streak: state.streak,
     doneToday,
     todayItems: todayRow?.items ?? [],
-    recent: entries.filter((e) => e.entry_date !== today).slice(0, 5).map((e) => ({ date: e.entry_date, items: e.items })),
+    recent,
     resurfaced: doneToday ? pickResurfaced(entries, today) : null,
     monthCount,
     allTime: entries.length,
