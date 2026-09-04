@@ -299,7 +299,7 @@ $('signin').addEventListener('submit', async (e) => {
 // ── Rotating word (home) ────────────────────────────────────────────────────
 (function rotor() {
   const slot = $('slot'), reel = slot.querySelector('.reel');
-  const words = ['dudes', 'blokes', 'straight-talkers', 'yoga-haters', 'bad bitches', 'rationalists', 'cynics', 'overthinkers', 'sceptics', 'pessimists'].sort(() => Math.random() - 0.5);
+  const words = ['dudes', 'blokes', 'straight-talkers', 'yoga-haters', 'bad bitches', 'rationalists', 'cynics', 'overthinkers', 'sceptics', 'pessimists', 'doom-scrollers'].sort(() => Math.random() - 0.5);
   const cls = words.map((_, i) => 'w' + (i % 5 + 1));
   reel.innerHTML = words.concat(words[0]).map((w, i) => `<span class="${i < words.length ? cls[i] : cls[0]}">${w}</span>`).join('');
   slot.setAttribute('aria-label', words[0]);
