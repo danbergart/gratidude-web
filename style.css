@@ -174,7 +174,6 @@ a.slab { text-decoration: none; color: var(--ink); }
 .recent .r { display: flex; gap: 14px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--ruleSoft); font-family: var(--sans); font-size: 13px; }
 .recent .r .rd { flex: 0 0 96px; color: var(--soft); }
 .recent .r .rt { color: #8f8c84; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#done .foot { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
 /* ══════════════════════════════════
    JOURNAL
