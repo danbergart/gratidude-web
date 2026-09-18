@@ -13,6 +13,7 @@ let current = { day: 1, streak: 0, doneToday: false, reminder: { enabled: false,
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const REMINDER_PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
 
 // ── Anon id ─────────────────────────────────────────────────────────────────
@@ -51,6 +52,12 @@ function paintNav() {
 const SCREENS = ['home', 'done', 'journal', 'habit', 'about', 'login'];
 
 function show(name) {
+  // Once today is logged, "home" is the Logged screen - not a fresh-looking
+  // form that implies you still owe three things.
+  if (name === 'home' && current.doneToday) {
+    renderDone(current.todayItems || []);
+    name = 'done';
+  }
   SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
   window.scrollTo(0, 0);
   if (name === 'home') { resetHome(); $('g1').focus(); }
@@ -165,16 +172,33 @@ async function handleNote() {
   // Already have it (reload of a day whose note was generated): show at once.
   if (current.noteReady) { showQuote(current.todayNote, false); return; }
 
-  // Otherwise fetch once, with a hard 4s ceiling. Any failure keeps the sub-line.
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 4000);
+  // The quote is the hero of this screen, so give generation real time. The
+  // sub-line stands in until it arrives. One call generates + stores it; if it
+  // times out, the line is cached server-side, so a second call returns fast.
+  const fetchNote = async (timeout) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const data = await api('/api/note', {}, { signal: ctrl.signal });
+      return data.note ?? null;
+    } finally { clearTimeout(timer); }
+  };
+
   try {
-    const data = await api('/api/note', {}, { signal: ctrl.signal });
+    const note = await fetchNote(10000);
     current.noteReady = true;
-    current.todayNote = data.note ?? null;
-    showQuote(current.todayNote, true);
-  } catch { /* silent - the sub-line remains, screen is complete */ }
-  finally { clearTimeout(timer); }
+    current.todayNote = note;
+    showQuote(note, true);
+  } catch {
+    // First call gave up before the model finished - retry the now-cached line.
+    try {
+      await delay(1500);
+      const note = await fetchNote(6000);
+      current.noteReady = true;
+      current.todayNote = note;
+      showQuote(note, true);
+    } catch { /* silent - the sub-line remains, screen is complete */ }
+  }
 }
 
 function fmtRecent(iso) {
@@ -279,10 +303,17 @@ $('contact').addEventListener('submit', async () => {
 });
 
 // ── Login: magic link ───────────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+$('email').addEventListener('input', () => {
+  $('signin-btn').disabled = !EMAIL_RE.test($('email').value.trim());
+  $('login-error').textContent = '';
+});
+$('signin-btn').disabled = true;
+
 $('signin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('email').value.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('login-error').textContent = 'that email looks off'; return; }
+  if (!EMAIL_RE.test(email)) { $('login-error').textContent = 'that email looks off'; return; }
   const btn = $('signin-btn');
   btn.disabled = true; btn.textContent = 'Sending…';
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
@@ -308,7 +339,7 @@ $('signin').addEventListener('submit', async (e) => {
   setInterval(() => {
     si++;
     reel.style.transition = 'transform .42s cubic-bezier(.4,0,.2,1)';
-    reel.style.transform = `translateY(-${si * 1.2}em)`;
+    reel.style.transform = `translateY(-${si * 1.5}em)`;
     slot.setAttribute('aria-label', words[si % words.length]);
     if (si === words.length) setTimeout(() => { reel.style.transition = 'none'; reel.style.transform = 'none'; si = 0; }, 440);
   }, 1600);
