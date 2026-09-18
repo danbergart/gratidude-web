@@ -22,31 +22,24 @@
     <div class="home-inner">
       <h1 class="mark-big" aria-label="Gratidude"><i class="l1">G</i><i class="l2">r</i><i class="l3">a</i><i class="l4">t</i><i class="l5">i</i><i>dude</i></h1>
       <p class="tagline">A simple gratitude journal for <span class="slot" id="slot" aria-label="straight-talkers"><span class="reel"></span></span></p>
-      <p class="prompt">Three things you're grateful for today.</p>
+      <p class="prompt">Write three things that you're grateful for today:</p>
       <div class="box" id="box">
-        <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="something that went right" autocomplete="off" autofocus></div>
-        <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="someone you're glad of" autocomplete="off"></div>
-        <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="a small thing you'd miss" autocomplete="off"></div>
+        <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="" autocomplete="off" autofocus></div>
+        <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="" autocomplete="off"></div>
+        <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="" autocomplete="off"></div>
       </div>
-      <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
+      <div class="btns"><button class="slab" id="submit" type="button" disabled>Submit</button></div>
       <div class="metarow" id="metarow"><span class="hint" id="daycount">day 1</span></div>
-      <p class="privacy-note" id="privacy-note">Private. No account needed, no feed — your three things stay yours.</p>
+      <p class="privacy-note" id="privacy-note">Private. No account needed.</p>
       <div class="home-done" id="home-done" hidden>
         <p class="hd-head">Done for today.</p>
         <div class="logged" id="home-logged"></div>
         <p class="done-cue">Back tomorrow.</p>
+        <button class="linklike subtle" type="button" data-edit>Change today's three</button>
       </div>
     </div>
   </div>
-  <footer class="site-foot">
-    <nav class="foot-links">
-      <button class="foot-link" type="button" data-go="about">About</button>
-      <a href="mailto:hello@gratidude.ai">Contact</a>
-      <a href="mailto:hello@gratidude.ai?subject=Gratidude%20bug%20report">Report a bug</a>
-      <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
-    </nav>
-    <p class="foot-by">by Dan Berg</p>
-  </footer>
+  <div class="footslot"></div>
 </section>
 
 <!-- ══════════ DONE ══════════ -->
@@ -70,6 +63,7 @@
     <div class="done-foot">
       <p class="done-save" id="done-save" hidden><button class="linklike" type="button" data-go="login">Keep these for good — add your email →</button></p>
       <p class="done-cue" id="done-cue">That's today. Back tomorrow.</p>
+      <button class="linklike subtle" type="button" data-edit>Change today's three</button>
     </div>
   </div>
 </section>
@@ -87,6 +81,7 @@
     <div id="j-loading" class="j-loading" hidden>Loading your entries…</div>
     <div id="j-empty" class="j-empty" hidden>Nothing here yet. Your first three things go on the home page.</div>
   </div>
+  <div class="footslot"></div>
 </section>
 
 <!-- ══════════ BUILD THE HABIT ══════════ -->
@@ -166,6 +161,7 @@
       <span class="hint">Version 2.0 (web beta)</span>
     </div>
   </div>
+  <div class="footslot"></div>
 </section>
 
 <!-- ══════════ SIGN IN ══════════ -->
@@ -209,6 +205,21 @@
     </div>
   </div>
 </section>
+
+<!-- ══════════ CONTACT / BUG MODAL ══════════ -->
+<div class="modal" id="contact-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-x" id="contact-close" type="button" aria-label="Close">×</button>
+    <h2 id="contact-title">Get in touch.</h2>
+    <p class="modal-sub" id="contact-sub">Something to say? Make it brief.</p>
+    <form id="contact-form" autocomplete="off">
+      <div class="field"><label class="smallcaps" for="cm-email">email</label><input id="cm-email" type="email" placeholder="you@example.com"></div>
+      <div class="field"><label class="smallcaps" for="cm-msg">message</label><textarea id="cm-msg" rows="4" placeholder="go on then"></textarea></div>
+      <button class="slab" type="submit" id="cm-send">Send it</button>
+      <p class="modal-ok" id="cm-ok" hidden></p>
+    </form>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>

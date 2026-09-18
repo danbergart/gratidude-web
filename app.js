@@ -55,9 +55,10 @@ function paintNav() {
 const SCREENS = ['home', 'done', 'journal', 'habit', 'about', 'login'];
 
 function show(name) {
+  if (name !== 'home') editing = false; // leaving home cancels an edit
   SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
   window.scrollTo(0, 0);
-  if (name === 'home') { resetHome(); if (!current.doneToday) $('g1').focus(); }
+  if (name === 'home') { resetHome(); if (!current.doneToday || editing) $('g1').focus(); }
   if (name === 'journal') loadJournal();
   if (name === 'habit') paintReminder();
   if (name === 'login') paintLogin();
@@ -76,33 +77,131 @@ function paintLogin() {
 }
 
 document.addEventListener('click', (e) => {
+  const c = e.target.closest('[data-contact]');
+  if (c) { e.preventDefault(); openContact(c.dataset.contact); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { e.preventDefault(); startEdit(); return; }
   const go = e.target.closest('[data-go]');
   if (go) { e.preventDefault(); show(go.dataset.go); }
 });
+
+// ── Footer (injected into every .footslot) ──────────────────────────────────
+const FOOTER_HTML = `
+  <footer class="site-foot"><div class="foot-inner">
+    <nav class="foot-links">
+      <button class="foot-link" type="button" data-go="about">About</button>
+      <button class="foot-link" type="button" data-contact="general">Contact</button>
+      <button class="foot-link" type="button" data-contact="bug">Report a bug</button>
+      <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
+    </nav>
+    <p class="foot-by">by <a href="https://danberg.art" target="_blank" rel="noopener">Dan Berg</a></p>
+  </div></footer>`;
+function paintFooter() {
+  document.querySelectorAll('.footslot').forEach((s) => { s.innerHTML = FOOTER_HTML; });
+}
+
+// ── Rotating placeholders (a fresh three each visit) ────────────────────────
+const PLACEHOLDER_POOL = [
+  'My sports team not playing terribly',
+  'Having a beer with my friends',
+  'Lying in bed and watching TV',
+  'The bus turning up on time',
+  'Nobody sitting next to me on the train',
+  'A cup of tea at the right strength',
+  'Getting the good parking spot',
+  'My knees not hurting today',
+  'A biscuit that survived the dunk',
+  'The wifi actually working',
+  'Leftovers for lunch',
+  'Rain while I was already indoors',
+  'The dog being pleased to see me',
+  'A meeting that got cancelled',
+  'Someone else making the coffee',
+  'Clean sheets night',
+  'Toast, correctly browned',
+  'Payday landing a day early',
+  'A shower with decent water pressure',
+  'The kettle boiling before I got back',
+  'My team not conceding in the last minute',
+  'Getting a seat at the pub',
+  'Nobody replying to that email yet',
+  'The bin men coming on the right day',
+];
+function setPlaceholders() {
+  const picks = [...PLACEHOLDER_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  gs().forEach((el, i) => { el.placeholder = picks[i]; });
+}
+
+// ── Contact / bug modal ─────────────────────────────────────────────────────
+function openContact(type) {
+  const bug = type === 'bug';
+  $('contact-title').textContent = bug ? 'Report a bug.' : 'Get in touch.';
+  $('contact-sub').textContent = bug ? "What broke? Spare no detail." : 'Something to say? Make it brief.';
+  $('cm-send').textContent = 'Send it';
+  $('cm-send').disabled = false;
+  $('cm-ok').hidden = true; $('cm-ok').textContent = '';
+  $('contact-modal').dataset.type = type;
+  $('contact-modal').hidden = false;
+  $('cm-email').focus();
+}
+function closeContact() { $('contact-modal').hidden = true; }
+
+$('contact-close').addEventListener('click', closeContact);
+$('contact-modal').addEventListener('click', (e) => { if (e.target === $('contact-modal')) closeContact(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('contact-modal').hidden) closeContact(); });
+$('contact-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const message = $('cm-msg').value.trim();
+  if (!message) { $('cm-msg').focus(); return; }
+  $('cm-send').disabled = true; $('cm-send').textContent = 'Sending…';
+  try {
+    await api('/api/feedback', { email: $('cm-email').value.trim(), message, type: $('contact-modal').dataset.type });
+    $('cm-ok').textContent = 'Got it. Now sod off and have a day.';
+    $('cm-ok').hidden = false;
+    $('cm-msg').value = '';
+    setTimeout(closeContact, 1600);
+  } catch {
+    $('cm-ok').textContent = "Didn't send. Email hello@gratidude.ai instead.";
+    $('cm-ok').hidden = false;
+    $('cm-send').disabled = false; $('cm-send').textContent = 'Send it';
+  }
+});
+
+// ── Edit today's entries ────────────────────────────────────────────────────
+let editing = false;
+function startEdit() { editing = true; show('home'); }
 
 // ── Home ────────────────────────────────────────────────────────────────────
 const gs = () => [$('g1'), $('g2'), $('g3')];
 const filled = () => gs().every((i) => i.value.trim());
 
 function resetHome() {
-  const done = !!current.doneToday;
-  // Writing mode vs. a clean "already done today" recap - never a pre-filled
-  // form that looks like you still owe three things.
+  const done = !!current.doneToday && !editing;
+  // Three modes: writing (fresh), editing (today's entries, pre-filled), and a
+  // clean "already done" recap - never a pre-filled form that looks unfinished.
   $('box').hidden = done;
   document.querySelector('#home .btns').hidden = done;
   $('metarow').hidden = done;
-  $('privacy-note').hidden = done;
+  $('privacy-note').hidden = done || editing;
   document.querySelector('#home .prompt').hidden = done;
   $('home-done').hidden = !done;
 
   if (done) {
     $('home-logged').innerHTML = (current.todayItems ?? []).map((t, i) =>
       `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
+    return;
+  }
+
+  if (editing) {
+    gs().forEach((i, n) => { i.value = current.todayItems?.[n] ?? ''; });
+    $('submit').textContent = 'Save changes';
   } else {
     gs().forEach((i) => { i.value = ''; });
-    $('daycount').textContent = `day ${current.day}`;
-    $('submit').disabled = !filled();
+    setPlaceholders();
+    $('submit').textContent = 'Submit';
   }
+  $('daycount').textContent = `day ${current.day}`;
+  $('submit').disabled = !filled();
 }
 
 gs().forEach((el, i) => {
@@ -122,7 +221,8 @@ $('submit').addEventListener('click', async () => {
   try {
     const data = await api('/api/submit', { items });
     current = { ...current, ...data, monthCount: (current.monthCount ?? 0) + 1 };
-    journalCache = null; // today's entry is new - refetch on next journal open
+    editing = false;
+    journalCache = null; // entry changed - refetch on next journal open
     renderDone(items);
     show('done');
   } catch {
@@ -152,6 +252,29 @@ function pickHeading(dayNum) {
   return HEADINGS[d % HEADINGS.length];
 }
 
+// Stock sarcastic-drill-instructor lines. They praise showing up, never the
+// content, so they sit fine on top of anything. Deterministic per day.
+const SUBQUIPS = [
+  "Slow clap. You'll be a Zen master in no time.",
+  "Namaste. You're really doing it.",
+  "Good boy. Pat on the head.",
+  "Three whole things. Extraordinary scenes.",
+  "Look at you, feeling things on purpose.",
+  "That's the bare minimum and you cleared it. Proud, sort of.",
+  "Gratitude logged. Don't let it go to your head.",
+  "Marvellous. Now go and be insufferable about it.",
+  "Three things. Practically a monk now.",
+  "Enlightenment pending. Back tomorrow.",
+  "Cracking effort. The universe is thrilled, apparently.",
+  "There it is. Character development.",
+  "Big day for your spiritual growth. Enormous.",
+  "Done. You're basically the Dalai Lama with wifi.",
+];
+function pickQuip(dayNum) {
+  const d = Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1;
+  return SUBQUIPS[d % SUBQUIPS.length];
+}
+
 function renderDone(items) {
   $('done-head').textContent = pickHeading(current.todayDayNum ?? current.day);
   $('logged').innerHTML = items.map((t, i) =>
@@ -173,8 +296,7 @@ function renderDone(items) {
   handleNote();
 }
 
-// The AI line, promoted to the hero of the Logged screen. Until it arrives (or
-// if it never does), the small "that's today done" sub-line stands in.
+// The hero line of the Logged screen.
 function showQuote(text, fade) {
   if (!text) { $('quote').hidden = true; $('done-sub').hidden = false; return; }
   $('quote-text').textContent = `“${text}”`;
@@ -183,17 +305,17 @@ function showQuote(text, fade) {
   if (fade) { $('quote').classList.remove('in'); void $('quote').offsetWidth; $('quote').classList.add('in'); }
 }
 
+// The first few days get a guaranteed stock quip - instant, reliable, on-tone.
+// From day 4 the drill instructor reads your actual three and takes the piss
+// specifically; a safety pass makes it drop the act on anything heavy (it then
+// returns nothing, and the stock quip stays).
 async function handleNote() {
-  $('quote').hidden = true;
-  $('quote').classList.remove('in');
-  $('done-sub').hidden = false;
+  const dayNum = current.todayDayNum ?? current.day;
+  showQuote(pickQuip(dayNum), true);
 
-  // Already have it (reload of a day whose note was generated): show at once.
-  if (current.noteReady) { showQuote(current.todayNote, false); return; }
+  if (dayNum <= 3) return;
+  if (current.noteReady) { if (current.todayNote) showQuote(current.todayNote, false); return; }
 
-  // The quote is the hero of this screen, so give generation real time. The
-  // sub-line stands in until it arrives. One call generates + stores it; if it
-  // times out, the line is cached server-side, so a second call returns fast.
   const fetchNote = async (timeout) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeout);
@@ -207,16 +329,15 @@ async function handleNote() {
     const note = await fetchNote(10000);
     current.noteReady = true;
     current.todayNote = note;
-    showQuote(note, true);
+    if (note) showQuote(note, true);
   } catch {
-    // First call gave up before the model finished - retry the now-cached line.
     try {
       await delay(1500);
       const note = await fetchNote(6000);
       current.noteReady = true;
       current.todayNote = note;
-      showQuote(note, true);
-    } catch { /* silent - the sub-line remains, screen is complete */ }
+      if (note) showQuote(note, true);
+    } catch { /* keep the stock quip - screen is complete */ }
   }
 }
 
@@ -430,6 +551,7 @@ async function boot() {
 async function init() {
   anonId = getOrCreateAnonId();
   paintNav();
+  paintFooter();
   const { data: { session } } = await sb.auth.getSession();
   if (session) { authSession = session; await activate(session); }
 

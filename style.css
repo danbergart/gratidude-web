@@ -106,7 +106,7 @@ a.slab { text-decoration: none; color: var(--ink); }
 .home-inner { width: 100%; max-width: 520px; padding: 0 24px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .mark-big { font-family: var(--serif); font-size: clamp(46px, 13vw, 82px); letter-spacing: -.035em; line-height: 1; margin: 0 0 8px; font-weight: 400; user-select: none; }
 .mark-big i { font-style: normal; }
-.tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 14px; white-space: nowrap; }
+.tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 32px; white-space: nowrap; }
 .prompt { font-family: var(--mono); font-size: 13.5px; line-height: 1.4; color: var(--ink); margin: 0 0 22px; }
 
 /* Height carries extra leading so ascenders/descenders never touch the clip
@@ -141,12 +141,17 @@ a.slab { text-decoration: none; color: var(--ink); }
 .hd-head { font-family: var(--serif); font-size: 24px; letter-spacing: -.02em; margin: 0 0 20px; }
 .home-done .done-cue { margin: 20px 0 0; }
 
-/* Home footer - shares the home block's 520 column so edges line up. */
-.site-foot { width: 100%; max-width: 520px; margin: auto auto 0; padding: 20px 24px 30px; border-top: 1px solid var(--ruleSoft); text-align: left; }
-.foot-links { display: flex; flex-wrap: wrap; gap: 16px 20px; }
-.site-foot a, .foot-link { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: #55524a; background: none; border: 0; padding: 0; text-decoration: none; cursor: pointer; }
-.site-foot a:hover, .foot-link:hover { color: var(--link); }
+/* Full-width site footer, shown on home, journal and about. */
+.footslot { width: 100%; margin-top: auto; }
+.site-foot { width: 100%; border-top: 1px solid var(--ruleSoft); }
+.foot-inner { width: 100%; max-width: 1120px; margin: 0 auto; padding: 22px 40px 30px; text-align: left; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 16px 22px; }
+.foot-links a, .foot-link { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: #55524a; background: none; border: 0; padding: 0; text-decoration: none; cursor: pointer; }
+.foot-links a:hover, .foot-link:hover { color: var(--link); }
 .foot-by { margin: 14px 0 0; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--faint); }
+.foot-by a { color: var(--soft); text-decoration: none; border-bottom: 1px solid var(--rule); }
+.foot-by a:hover { color: var(--link); border-color: var(--link); }
+@media (max-width: 560px) { .foot-inner { padding: 20px 24px 28px; } }
 
 /* ══════════════════════════════════
    DONE
@@ -175,6 +180,22 @@ a.slab { text-decoration: none; color: var(--ink); }
 .done-save { margin: 0; }
 .linklike { background: none; border: 0; padding: 0; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; font-weight: 600; color: var(--link); cursor: pointer; }
 .linklike:hover { color: var(--ink); }
+.linklike.subtle { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: 4px; }
+.linklike.subtle:hover { color: var(--link); }
+
+/* Contact / bug modal */
+.modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(23,22,15,.32); }
+.modal-card { position: relative; width: 100%; max-width: 400px; background: var(--paper); border: 1px solid var(--rule); padding: 30px 28px 28px; }
+.modal-x { position: absolute; top: 12px; right: 14px; background: none; border: 0; font-size: 22px; line-height: 1; color: var(--faint); cursor: pointer; }
+.modal-x:hover { color: var(--ink); }
+.modal-card h2 { font-family: var(--serif); font-size: 26px; letter-spacing: -.02em; font-weight: 400; margin: 0 0 6px; }
+.modal-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin: 0 0 20px; }
+.modal-card .field { margin-bottom: 16px; }
+.modal-card .field label { display: block; color: var(--soft); margin-bottom: 8px; }
+.modal-card .field input, .modal-card .field textarea { width: 100%; border: 1px solid #a6a29a; border-right-color: #d2cfc8; border-bottom-color: #d2cfc8; box-shadow: inset 2px 2px 3px rgba(0,0,0,.09); background: #fff; padding: 9px 11px; font-size: 15px; font-family: var(--mono); resize: vertical; }
+.modal-card .field input:focus, .modal-card .field textarea:focus { border-color: var(--link); outline: none; }
+.modal-card .slab { display: block; width: 100%; margin-top: 4px; }
+.modal-ok { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--link); margin: 12px 0 0; }
 
 .logged { width: 100%; max-width: 440px; }
 .logged .g { display: flex; gap: 14px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--ruleSoft); }
@@ -246,8 +267,8 @@ blockquote .who { font-family: var(--mono); font-size: 10px; letter-spacing: .16
 .abody ol li:nth-child(3)::before { color: var(--link); }
 .abody ol li span { font-family: var(--sans); font-size: 15px; line-height: 1.5; color: var(--ink); }
 
-.rowset { border-top: 1px solid var(--ruleSoft); }
-.abody .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 14px 0; border-bottom: 1px solid var(--ruleSoft); font-family: var(--sans); font-size: 15px; color: var(--ink); }
+.rowset { border-top: 0; }
+.abody .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 4px 0 10px; border-bottom: 0; font-family: var(--sans); font-size: 15px; color: var(--ink); }
 
 .sw { position: relative; width: 38px; height: 21px; border: 1px solid var(--rule); background: transparent; padding: 0; flex: 0 0 auto; transition: background .15s, border-color .15s; }
 .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; background: var(--rule); transition: left .15s, background .15s; }

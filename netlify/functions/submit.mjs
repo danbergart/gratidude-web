@@ -20,26 +20,40 @@ export default async (req) => {
     state = { ...state, day_closed: false, grats_today: 0 };
   }
 
+  const three = (Array.isArray(items) ? items : []).map(clean).filter(Boolean).slice(0, 3);
+
   if (state.day_closed) {
-    // Already logged today - return the stored day without double-counting.
+    // Already logged today. A resubmit is an EDIT: replace the three, reset the
+    // note so it regenerates for the new entries, and never touch day/streak.
     const owner0 = userId ? { user_id: id } : { anon_id: id };
     const { data: existing } = await supabase
       .from('entries').select('items, day_num, note, note_generated').match({ ...owner0, entry_date: today }).single();
+    const dayN = existing?.day_num ?? state.day;
+
+    let savedItems = existing?.items ?? [];
+    let noteReady = existing?.note_generated ?? false;
+    let todayNote = existing?.note ?? null;
+
+    if (three.length === 3) {
+      await supabase.from('entries').update({ items: three, note: null, note_generated: false })
+        .match({ ...owner0, entry_date: today });
+      savedItems = three; noteReady = false; todayNote = null;
+    }
+
     const { data: pastRows } = await supabase
       .from('entries').select('entry_date, items').match(owner0).neq('entry_date', today);
     return json({
       day: state.day,
-      todayDayNum: existing?.day_num ?? state.day,
+      todayDayNum: dayN,
       streak: state.streak,
       doneToday: true,
-      todayItems: existing?.items ?? [],
+      todayItems: savedItems,
       resurfaced: pickResurfaced(pastRows ?? [], today),
-      noteReady: existing?.note_generated ?? false,
-      todayNote: existing?.note ?? null,
+      noteReady,
+      todayNote,
     });
   }
 
-  const three = (Array.isArray(items) ? items : []).map(clean).filter(Boolean).slice(0, 3);
   if (three.length < 3) return json({ error: 'need_three' }, 400);
 
   const streakAlive = state.last_streak_date === yesterdayStr() || state.last_streak_date === today;
