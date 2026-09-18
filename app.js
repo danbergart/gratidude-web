@@ -66,18 +66,9 @@ document.addEventListener('keydown', (e) => {
   else if ($('menu').classList.contains('on')) toggleMenu(false);
 });
 
-// ── The command headline (writing state, one per load) ──────────────────────
-const COMMANDS = [
-  ['Give me three things you’re grateful for.', 'Then go away and come back tomorrow.'],
-  ['Three things.', 'Then clear off.'],
-  ['Right. Three things you’re grateful for,', 'and no waffling.'],
-  ['Name three things that didn’t ruin your day.', 'Go.'],
-  ['Three things. You’ve got the rest of the day', 'to do nothing.'],
-  ['I need three things.', 'Small ones count.'],
-  ['Grateful for what, exactly?', 'Three answers. Now.'],
-  ['Three things, then you’re dismissed.', 'Standard procedure.'],
-];
-const WRITING_CMD = COMMANDS[Math.floor(Math.random() * COMMANDS.length)];
+// ── The command headline (writing state) ─────────────────────────────────────
+// Fixed default for now — more variants can come back once the copy is final.
+const WRITING_CMD = ['Give me three things you’re grateful for,', 'then bugger off.'];
 const writingCommandHTML = () => `${esc(WRITING_CMD[0])} <span class="dim">${esc(WRITING_CMD[1])}</span>`;
 
 // ── Rotating placeholders (a fresh three each visit) ────────────────────────
@@ -376,12 +367,12 @@ const WHO = ['dudes', 'blokes', 'straight-talkers', 'yoga-haters', 'bad bitches'
 (function taglineRotor() {
   const el = $('who');
   let wi = Math.floor(Math.random() * WHO.length);
-  el.textContent = WHO[wi];
+  el.textContent = `${WHO[wi]}.`;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   setInterval(() => {
     wi = (wi + 1) % WHO.length;
     el.classList.add('out');
-    setTimeout(() => { el.textContent = WHO[wi]; el.classList.remove('out'); }, 200);
+    setTimeout(() => { el.textContent = `${WHO[wi]}.`; el.classList.remove('out'); }, 200);
   }, 2600);
 })();
 
@@ -412,6 +403,10 @@ async function boot() {
 }
 
 async function init() {
+  // Paint the home screen instantly with defaults so the headline and fields
+  // never wait on a network round-trip; boot() repaints once real state lands.
+  show('home');
+
   anonId = getOrCreateAnonId();
   const { data: { session } } = await sb.auth.getSession();
   if (session) { authSession = session; await activate(session); }

@@ -11,7 +11,7 @@
   --bone: #F2F1EC;
   --bone-dim: #9A9892;
   --bone-faint: #8A8884;
-  --placeholder: #6E6C67;
+  --placeholder: #86847E;
   --disabled: #78766F;
   --rule: #2A2A28;
   --signal: #FFD400;
@@ -108,7 +108,7 @@ a:hover { color: var(--signal); }
 
 .foot { display: flex; justify-content: flex-end; align-items: flex-end; gap: 16px; }
 .tagline { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-faint); }
-.tagline .who { color: var(--bone); display: inline-block; min-width: 8ch; transition: opacity .18s linear; }
+.tagline .who { color: var(--bone); display: inline-block; min-width: 24ch; text-align: left; transition: opacity .18s linear; }
 .tagline .who.out { opacity: 0; }
 
 /* ══════════════════════════════════
