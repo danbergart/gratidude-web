@@ -42,7 +42,7 @@ function paintNav() {
   document.querySelectorAll('.navslot').forEach((slot) => {
     const here = slot.dataset.here;
     slot.innerHTML =
-      `<button class="link${here === 'journal' ? ' on' : ''}" type="button" data-go="journal">history</button>`
+      `<button class="link${here === 'journal' ? ' on' : ''}" type="button" data-go="journal">journal</button>`
       + `<button class="link${here === 'habit' ? ' on' : ''}" type="button" data-go="habit">build the habit</button>`
       + `<button class="ico${here === 'account' ? ' on' : ''}" type="button" data-go="login" aria-label="Account">${PERSON_ICON}</button>`;
   });
@@ -72,7 +72,10 @@ function paintLogin() {
   $('login-card').hidden = signedIn;
   $('login-sent').hidden = true;
   $('login-in').hidden = !signedIn;
-  if (signedIn) $('account-email').textContent = authSession.user?.email ?? '';
+  if (signedIn) {
+    $('account-email').textContent = authSession.user?.email ?? '';
+    $('login-in-head').textContent = 'Your account.';
+  }
 }
 
 document.addEventListener('click', (e) => {
@@ -150,6 +153,9 @@ function renderDone(items) {
     return `<div class="r"><span class="rd">${nice}</span><span class="rt">${esc(first)}…</span></div>`;
   }).join('');
   $('recent').parentElement.hidden = recent.length === 0;
+
+  // Signed-in users are already saved; only anon users get the save nudge.
+  $('done-save').hidden = !!authSession;
 
   handleNote();
 }
@@ -367,6 +373,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
   try { const st = await api('/api/state'); current = { ...current, ...st }; } catch { /* non-fatal */ }
   // Land on a clear confirmation, not a page that looks logged-out.
   show('login');
+  $('login-in-head').textContent = "You're in.";
 });
 
 document.getElementById('signout-btn')?.addEventListener('click', async () => {

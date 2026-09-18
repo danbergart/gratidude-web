@@ -22,10 +22,11 @@
     <div class="home-inner">
       <h1 class="mark-big" aria-label="Gratidude"><i class="l1">G</i><i class="l2">r</i><i class="l3">a</i><i class="l4">t</i><i class="l5">i</i><i>dude</i></h1>
       <p class="tagline">A simple gratitude journal for <span class="slot" id="slot" aria-label="straight-talkers"><span class="reel"></span></span></p>
+      <p class="prompt">Three things you're grateful for today.</p>
       <div class="box" id="box">
-        <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="first thing" autocomplete="off" autofocus></div>
-        <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="second thing" autocomplete="off"></div>
-        <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="third thing" autocomplete="off"></div>
+        <div class="in"><span class="n">1.</span><input id="g1" type="text" placeholder="something that went right" autocomplete="off" autofocus></div>
+        <div class="in"><span class="n">2.</span><input id="g2" type="text" placeholder="someone you're glad of" autocomplete="off"></div>
+        <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="a small thing you'd miss" autocomplete="off"></div>
       </div>
       <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
       <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
@@ -59,6 +60,10 @@
     <div class="mini">
       <div class="mh"><span class="mo">Earlier this week</span><span class="hint" id="mcount"></span></div>
       <div class="recent" id="recent"></div>
+    </div>
+    <div class="done-foot">
+      <p class="done-save" id="done-save" hidden><button class="linklike" type="button" data-go="login">Keep these for good — add your email →</button></p>
+      <p class="done-cue" id="done-cue">That's today. Back tomorrow.</p>
     </div>
   </div>
 </section>
@@ -144,7 +149,7 @@
 
     <div class="sect">
       <h2>Get in touch</h2>
-      <p>Something broken, or an idea? Tell us. Briefly.</p>
+      <p>Something broken, or an idea? Tell me. Briefly.</p>
       <form id="contact" autocomplete="off" onsubmit="return false">
         <div class="field"><label class="smallcaps" for="c-email">email</label><input id="c-email" type="email" placeholder="you@example.com"></div>
         <div class="field"><label class="smallcaps" for="c-msg">message</label><textarea id="c-msg" rows="4" placeholder="go on then"></textarea></div>
@@ -170,8 +175,8 @@
     <div class="aside">
       <h1 class="wordmark" aria-label="Gratidude"><span class="l1">G</span><span class="l2">r</span><span class="l3">a</span><span class="l4">t</span><span class="l5">i</span>dude</h1>
       <div class="rule"></div>
-      <h3>Build the habit:</h3>
-      <p>Create a free account to get notifications, save your entries, and text chat with Gratidude to improve your practice.</p>
+      <h3>Why sign up:</h3>
+      <p>A free account keeps your entries and your streak safe — on every device, for good. No password, just a link.</p>
     </div>
     <div class="form">
       <div class="card" id="login-card">
@@ -194,7 +199,7 @@
         <div class="sub hint">your journal is saved</div>
         <p class="sent-note">Signed in as <b id="account-email"></b>. Everything you write now syncs to this account.</p>
         <div class="in-actions">
-          <button class="slab" type="button" data-go="home">Start today</button>
+          <button class="slab" type="button" data-go="home">Go to today</button>
           <div class="linkrow"><button type="button" id="signout-btn">Sign out</button></div>
         </div>
       </div>

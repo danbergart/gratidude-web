@@ -106,7 +106,8 @@ a.slab { text-decoration: none; color: var(--ink); }
 .home-inner { width: 100%; max-width: 520px; padding: 0 24px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .mark-big { font-family: var(--serif); font-size: clamp(46px, 13vw, 82px); letter-spacing: -.035em; line-height: 1; margin: 0 0 8px; font-weight: 400; user-select: none; }
 .mark-big i { font-style: normal; }
-.tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 32px; white-space: nowrap; }
+.tagline { font-family: var(--serif); font-style: italic; font-size: clamp(13px, 3.3vw, 19px); color: var(--soft); margin: 0 0 14px; white-space: nowrap; }
+.prompt { font-family: var(--mono); font-size: 13.5px; line-height: 1.4; color: var(--ink); margin: 0 0 22px; }
 
 /* Height carries extra leading so ascenders/descenders never touch the clip
    edge - stops a sliver of the adjacent word peeking through. Step matches. */
@@ -160,6 +161,13 @@ a.slab { text-decoration: none; color: var(--ink); }
 .quote.in { animation: quoteIn .24s ease-out both; }
 @keyframes quoteIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .quote.in { animation: none; } }
+
+/* Logged-screen footer: loop cue for all, save nudge for anon only */
+.done-foot { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 2px; text-align: center; }
+.done-cue { margin: 0; font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--faint); }
+.done-save { margin: 0; }
+.linklike { background: none; border: 0; padding: 0; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; font-weight: 600; color: var(--link); cursor: pointer; }
+.linklike:hover { color: var(--ink); }
 
 .logged { width: 100%; max-width: 440px; }
 .logged .g { display: flex; gap: 14px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--ruleSoft); }
