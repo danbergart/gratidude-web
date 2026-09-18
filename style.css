@@ -185,7 +185,7 @@ a.slab { text-decoration: none; color: var(--ink); }
 
 /* Contact / bug modal */
 .modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(23,22,15,.32); }
-.modal-card { position: relative; width: 100%; max-width: 400px; background: var(--paper); border: 1px solid var(--rule); padding: 30px 28px 28px; }
+.modal-card { position: relative; width: 100%; max-width: 400px; background: var(--white); border: 1px solid var(--rule); box-shadow: 0 12px 40px rgba(23,22,15,.16); padding: 30px 28px 28px; }
 .modal-x { position: absolute; top: 12px; right: 14px; background: none; border: 0; font-size: 22px; line-height: 1; color: var(--faint); cursor: pointer; }
 .modal-x:hover { color: var(--ink); }
 .modal-card h2 { font-family: var(--serif); font-size: 26px; letter-spacing: -.02em; font-weight: 400; margin: 0 0 6px; }
