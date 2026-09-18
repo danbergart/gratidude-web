@@ -111,7 +111,7 @@ function paintHome() {
   }
 
   if (editing) {
-    $('cmd').innerHTML = 'Changed your mind. <span class="dim">Get on with it.</span>';
+    $('cmd').innerHTML = 'Changed your mind? <span class="dim">Typical.</span>';
     gs().forEach((i, n) => { i.value = current.todayItems?.[n] ?? ''; i.closest('.row').classList.toggle('filled', !!i.value.trim()); });
     $('submit').textContent = 'Save changes';
   } else {
@@ -304,7 +304,7 @@ $('contact').addEventListener('submit', async () => {
 function openContact(type) {
   const bug = type === 'bug';
   $('contact-title').textContent = bug ? 'Report a bug.' : 'Get in touch.';
-  $('contact-sub').textContent = bug ? 'What broke? Spare no detail.' : 'Something to say? Make it brief.';
+  $('contact-sub').textContent = bug ? 'What broke? Time to snitch.' : 'Something to say? Make it brief.';
   $('cm-send').textContent = 'Send it'; $('cm-send').disabled = false;
   $('cm-ok').hidden = true; $('cm-ok').textContent = '';
   $('contact-modal').dataset.type = type;
