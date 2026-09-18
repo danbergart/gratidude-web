@@ -4,6 +4,9 @@
 const SUPABASE_URL = 'https://ykaddcnbokbmwoyvurlr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrYWRkY25ib2tibXdveXZ1cmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTM0MDksImV4cCI6MjA5MjY4OTQwOX0.bzVSEswEGYpp8tXQQ5gpH_fdI3Rk5pWHqm9F5ALXIp0';
 
+// Detect a magic-link landing before Supabase consumes the URL fragment.
+const CAME_FROM_MAGIC_LINK = /[#&?](access_token|code)=/.test(window.location.hash + window.location.search);
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -52,15 +55,9 @@ function paintNav() {
 const SCREENS = ['home', 'done', 'journal', 'habit', 'about', 'login'];
 
 function show(name) {
-  // Once today is logged, "home" is the Logged screen - not a fresh-looking
-  // form that implies you still owe three things.
-  if (name === 'home' && current.doneToday) {
-    renderDone(current.todayItems || []);
-    name = 'done';
-  }
   SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
   window.scrollTo(0, 0);
-  if (name === 'home') { resetHome(); $('g1').focus(); }
+  if (name === 'home') { resetHome(); if (!current.doneToday) $('g1').focus(); }
   if (name === 'journal') loadJournal();
   if (name === 'habit') paintReminder();
   if (name === 'login') paintLogin();
@@ -88,9 +85,24 @@ const gs = () => [$('g1'), $('g2'), $('g3')];
 const filled = () => gs().every((i) => i.value.trim());
 
 function resetHome() {
-  $('daycount').textContent = `day ${current.day}`;
-  if (current.doneToday) { gs().forEach((i, n) => { i.value = (current.todayItems?.[n] ?? ''); }); }
-  $('submit').disabled = !filled();
+  const done = !!current.doneToday;
+  // Writing mode vs. a clean "already done today" recap - never a pre-filled
+  // form that looks like you still owe three things.
+  $('box').hidden = done;
+  document.querySelector('#home .btns').hidden = done;
+  $('metarow').hidden = done;
+  $('privacy-note').hidden = done;
+  document.querySelector('#home .prompt').hidden = done;
+  $('home-done').hidden = !done;
+
+  if (done) {
+    $('home-logged').innerHTML = (current.todayItems ?? []).map((t, i) =>
+      `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
+  } else {
+    gs().forEach((i) => { i.value = ''; });
+    $('daycount').textContent = `day ${current.day}`;
+    $('submit').disabled = !filled();
+  }
 }
 
 gs().forEach((el, i) => {
@@ -110,6 +122,7 @@ $('submit').addEventListener('click', async () => {
   try {
     const data = await api('/api/submit', { items });
     current = { ...current, ...data, monthCount: (current.monthCount ?? 0) + 1 };
+    journalCache = null; // today's entry is new - refetch on next journal open
     renderDone(items);
     show('done');
   } catch {
@@ -220,14 +233,17 @@ function fmtDay(iso) {
   return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
 }
 
-async function loadJournal() {
-  let data;
-  try { data = await api('/api/journal'); }
-  catch { data = { entries: [], stats: { streak: current.streak, thisMonth: 0, allTime: 0 } }; }
+let journalCache = null;
 
-  $('j-streak').textContent = data.stats.streak ?? 0;
-  $('j-month').textContent = data.stats.thisMonth ?? 0;
-  $('j-all').textContent = data.stats.allTime ?? 0;
+function renderJournal(data) {
+  const summary = $('j-summary');
+  const total = data.stats.allTime ?? 0;
+  const streak = data.stats.streak ?? 0;
+  const bits = [];
+  if (total) bits.push(`${total} ${total === 1 ? 'entry' : 'entries'}`);
+  if (streak > 0) bits.push(`${streak}-day streak`);
+  summary.textContent = bits.join('  ·  ');
+  summary.hidden = bits.length === 0;
 
   const list = $('j-list');
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -241,12 +257,27 @@ async function loadJournal() {
     const [y, m] = e.date.split('-').map(Number);
     const label = `${MONTHS[m - 1]} ${y}`;
     if (label !== lastMonth) { html += `<p class="mlabel">${label}</p>`; lastMonth = label; }
-    const todayTag = e.date === todayIso ? ' <em>· today</em>' : '';
-    html += `<div class="entry"><div class="ehd"><span class="d">${fmtDay(e.date)}${todayTag}</span><span class="m">day ${e.dayNum ?? ''}</span></div>`
+    const isToday = e.date === todayIso;
+    const dateLine = isToday ? `Today <span class="dsub">${fmtDay(e.date)}</span>` : fmtDay(e.date);
+    html += `<div class="entry${isToday ? ' is-today' : ''}"><div class="ehd"><span class="d">${dateLine}</span></div>`
       + (e.items || []).map((g, i) => `<div class="jg n${i + 1}"><span class="n">0${i + 1}</span><span class="t">${esc(g)}</span></div>`).join('')
       + `</div>`;
   }
   list.innerHTML = html;
+}
+
+async function loadJournal() {
+  // Show cached entries instantly, then refresh in the background.
+  if (journalCache) { renderJournal(journalCache); }
+  else { $('j-list').innerHTML = ''; $('j-summary').hidden = true; $('j-empty').hidden = true; $('j-loading').hidden = false; }
+
+  let data;
+  try { data = await api('/api/journal'); }
+  catch { data = journalCache ?? { entries: [], stats: { streak: current.streak, thisMonth: 0, allTime: 0 } }; }
+
+  journalCache = data;
+  $('j-loading').hidden = true;
+  renderJournal(data);
 }
 
 // ── About: reminders ────────────────────────────────────────────────────────
@@ -401,6 +432,17 @@ async function init() {
   paintNav();
   const { data: { session } } = await sb.auth.getSession();
   if (session) { authSession = session; await activate(session); }
+
+  // Arrived by clicking the email link: confirm the sign-in explicitly rather
+  // than dropping them on a page that looks the same as when logged out.
+  if (CAME_FROM_MAGIC_LINK && authSession) {
+    history.replaceState(null, '', window.location.pathname);
+    try { const st = await api('/api/state'); current = { ...current, ...st }; } catch { /* non-fatal */ }
+    show('login');
+    $('login-in-head').textContent = "You're in.";
+    return;
+  }
+
   await boot();
 }
 

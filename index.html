@@ -29,7 +29,13 @@
         <div class="in"><span class="n">3.</span><input id="g3" type="text" placeholder="a small thing you'd miss" autocomplete="off"></div>
       </div>
       <div class="btns"><button class="slab" id="submit" type="button" disabled>That's my three</button></div>
-      <div class="metarow"><span class="hint" id="daycount">day 1</span></div>
+      <div class="metarow" id="metarow"><span class="hint" id="daycount">day 1</span></div>
+      <p class="privacy-note" id="privacy-note">Private. No account needed, no feed — your three things stay yours.</p>
+      <div class="home-done" id="home-done" hidden>
+        <p class="hd-head">Done for today.</p>
+        <div class="logged" id="home-logged"></div>
+        <p class="done-cue">Back tomorrow.</p>
+      </div>
     </div>
   </div>
   <footer class="site-foot">
@@ -76,13 +82,10 @@
   </div>
   <div class="jbody">
     <h1>Journal</h1>
-    <div class="stats">
-      <span class="s1">streak <b id="j-streak">0</b></span>
-      <span class="s2">this month <b id="j-month">0</b></span>
-      <span class="s3">all time <b id="j-all">0</b></span>
-    </div>
+    <p class="jsummary" id="j-summary"></p>
     <div id="j-list"></div>
-    <div id="j-empty" class="j-empty" hidden>Nothing logged yet. Your first three things go on the home page.</div>
+    <div id="j-loading" class="j-loading" hidden>Loading your entries…</div>
+    <div id="j-empty" class="j-empty" hidden>Nothing here yet. Your first three things go on the home page.</div>
   </div>
 </section>
 
