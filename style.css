@@ -46,7 +46,7 @@ a:hover { color: var(--signal); }
 }
 .screen.on { display: flex; }
 
-.top { display: flex; justify-content: flex-end; align-items: flex-start; gap: 16px; min-height: 22px; }
+.top { display: flex; justify-content: flex-end; align-items: flex-start; gap: 16px; min-height: 20px; }
 .top .stamp, .top .wordmark { margin-right: auto; }
 
 .menubtn { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .2em; color: var(--bone-dim); background: none; border: 0; cursor: pointer; padding: 0; text-transform: uppercase; }
@@ -197,7 +197,7 @@ blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spac
 /* ══════════════════════════════════
    MENU TAKEOVER
 ══════════════════════════════════ */
-#menu { position: fixed; inset: 0; z-index: 20; background: var(--ink); display: none; flex-direction: column; padding: clamp(24px, 4vw, 56px) clamp(var(--gutter), 4vw, 64px) calc(clamp(24px, 4vw, 40px) + env(safe-area-inset-bottom)); }
+#menu { position: fixed; inset: 0; z-index: 20; background: var(--ink); display: none; flex-direction: column; padding: clamp(24px, 4vw, 56px) clamp(var(--gutter), 4vw, 64px) calc(clamp(24px, 4vw, 56px) + env(safe-area-inset-bottom)); }
 #menu.on { display: flex; }
 #menu .top { justify-content: flex-end; }
 #menu .mlinks { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: clamp(4px, 1vw, 10px); }
