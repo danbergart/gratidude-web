@@ -157,7 +157,7 @@ a:hover { color: var(--signal); }
 
 /* About extras */
 blockquote { border-left: 2px solid var(--signal); padding-left: 22px; }
-blockquote p { font-family: var(--body); font-size: clamp(20px, 2.8vw, 28px); line-height: 1.45; color: var(--bone); font-style: italic; margin: 0 0 12px; max-width: 72ch; }
+.block blockquote p { font-family: var(--body); font-size: clamp(20px, 2.8vw, 28px); line-height: 1.45; color: var(--bone); font-style: italic; margin: 0 0 12px; max-width: 72ch; }
 blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--bone-faint); font-style: normal; }
 .version { margin-top: 40px; }
 
