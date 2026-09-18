@@ -15,7 +15,6 @@ let current = { day: 1, streak: 0, doneToday: false, reminder: { enabled: false,
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const REMINDER_PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
 
 function getOrCreateAnonId() {
@@ -181,28 +180,11 @@ function showQuote(text, fade) {
   if (fade) { $('cmd').style.opacity = '0'; requestAnimationFrame(() => { $('cmd').style.transition = 'opacity .2s linear'; $('cmd').style.opacity = '1'; }); }
 }
 
-// Days 1-3: guaranteed stock verdict. Day 4+: the drill instructor reads your
-// three and takes the piss; a safety pass drops the act on anything heavy.
-async function handleNote() {
+// A stock verdict, picked deterministically by day number. Nothing you write
+// is ever sent anywhere to generate this — it's a fixed line from a local pool.
+function handleNote() {
   const dayNum = current.todayDayNum ?? current.day;
   showQuote(pickQuip(dayNum), true);
-  if (dayNum <= 3) return;
-  if (current.noteReady) { if (current.todayNote) showQuote(current.todayNote, false); return; }
-
-  const fetchNote = async (timeout) => {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeout);
-    try { const data = await api('/api/note', {}, { signal: ctrl.signal }); return data.note ?? null; }
-    finally { clearTimeout(timer); }
-  };
-  try {
-    const note = await fetchNote(10000);
-    current.noteReady = true; current.todayNote = note;
-    if (note) showQuote(note, true);
-  } catch {
-    try { await delay(1500); const note = await fetchNote(6000); current.noteReady = true; current.todayNote = note; if (note) showQuote(note, true); }
-    catch { /* keep the stock verdict */ }
-  }
 }
 
 // ── Journal ─────────────────────────────────────────────────────────────────

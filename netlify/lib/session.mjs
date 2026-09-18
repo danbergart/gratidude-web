@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function todayStr() { return new Date().toISOString().split('T')[0]; }
 
 export function yesterdayStr() {
@@ -53,7 +55,7 @@ export async function loadSession(req, anonId) {
     return { state: data, table: 'web_users', id: userId, userId };
   }
 
-  if (anonId) {
+  if (anonId && UUID_RE.test(anonId)) {
     let { data } = await supabase.from('anon_sessions').select('*').eq('id', anonId).single();
     if (!data) {
       await supabase.from('anon_sessions').insert({ id: anonId, last_session_date: today });
