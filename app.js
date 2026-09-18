@@ -58,7 +58,11 @@ document.addEventListener('click', (e) => {
   const ed = e.target.closest('[data-edit]');
   if (ed) { e.preventDefault(); startEdit(); return; }
   const go = e.target.closest('[data-go]');
-  if (go) { e.preventDefault(); toggleMenu(false); show(go.dataset.go); }
+  if (go) {
+    e.preventDefault(); toggleMenu(false); show(go.dataset.go);
+    const anchor = go.dataset.anchor && $(go.dataset.anchor);
+    if (anchor) requestAnimationFrame(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;

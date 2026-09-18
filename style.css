@@ -115,15 +115,15 @@ a:hover { color: var(--signal); }
    INNER SHEETS (journal, habit, about)
 ══════════════════════════════════ */
 .sheet { flex: 1; width: 100%; max-width: 820px; margin: 0 auto; padding: clamp(28px, 5vh, 64px) 0 40px; }
-.sheet .command.sm { margin-bottom: 18px; }
-.lede { font-family: var(--body); font-size: clamp(16px, 1.5vw, 19px); line-height: 1.55; color: var(--bone-dim); max-width: 54ch; margin: 0 0 8px; }
+.sheet .command.sm { margin-bottom: 22px; }
+.lede { font-family: var(--body); font-size: clamp(18px, 1.7vw, 21px); line-height: 1.6; color: var(--bone-dim); max-width: 54ch; margin: 0 0 8px; }
 
-.block { border-top: 1px solid var(--rule); margin-top: 40px; padding-top: 26px; }
-.block > .marker.sig { margin-bottom: 16px; }
-.block p { font-family: var(--body); font-size: 15px; line-height: 1.6; color: var(--bone-dim); margin: 0 0 12px; max-width: 56ch; }
+.block { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 28px; }
+.block > .marker.sig { margin-bottom: 18px; }
+.block p { font-family: var(--body); font-size: 16px; line-height: 1.65; color: var(--bone-dim); margin: 0 0 14px; max-width: 56ch; }
 .block p:last-child { margin-bottom: 0; }
 .block p b { color: var(--bone); }
-.note { font-family: var(--body); font-size: 13px; line-height: 1.55; color: var(--bone-faint); }
+.note { font-family: var(--body); font-size: 14px; line-height: 1.6; color: var(--bone-faint); }
 .note.ok { color: var(--signal); }
 
 /* Journal */
@@ -187,7 +187,7 @@ blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spac
 ══════════════════════════════════ */
 .authwrap { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; max-width: 460px; margin: 0 auto; width: 100%; }
 .authcard { width: 100%; }
-.authcard .command.sm { margin-bottom: 14px; }
+.authcard .command.sm { font-size: clamp(26px, 7.5vw, 34px); white-space: nowrap; margin-bottom: 14px; }
 .authcard .marker { margin-bottom: 24px; }
 .authcard .btn { display: block; width: 100%; margin-top: 4px; }
 .authcard .ghost { margin-top: 18px; }
@@ -210,11 +210,12 @@ blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spac
    CONTACT / BUG MODAL
 ══════════════════════════════════ */
 .modal { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(0,0,0,.72); }
-.modal-card { position: relative; width: 100%; max-width: 440px; background: var(--ink); border: 1px solid var(--rule); padding: 28px 26px 26px; }
-.modal-card #contact-close { position: absolute; top: 18px; right: 22px; }
-.modal-card h2 { margin: 0 0 6px; }
-.modal-card .marker { margin-bottom: 22px; }
-.modal-card .btn { display: block; width: 100%; margin-top: 4px; }
+.modal-card { position: relative; width: 100%; max-width: 460px; background: var(--ink); border: 1px solid var(--rule); padding: 44px 32px 32px; }
+.modal-card #contact-close { position: absolute; top: 22px; right: 24px; }
+.modal-card h2 { margin: 0 0 10px; }
+.modal-card .marker { margin-bottom: 28px; }
+.modal-card .field { margin-bottom: 20px; }
+.modal-card .btn { display: block; width: 100%; margin-top: 8px; }
 
 /* ══════════════════════════════════
    RESPONSIVE
