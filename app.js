@@ -4,14 +4,13 @@
 const SUPABASE_URL = 'https://ykaddcnbokbmwoyvurlr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrYWRkY25ib2tibXdveXZ1cmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTM0MDksImV4cCI6MjA5MjY4OTQwOX0.bzVSEswEGYpp8tXQQ5gpH_fdI3Rk5pWHqm9F5ALXIp0';
 
-// Detect a magic-link landing before Supabase consumes the URL fragment.
 const CAME_FROM_MAGIC_LINK = /[#&?](access_token|code)=/.test(window.location.hash + window.location.search);
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── State ───────────────────────────────────────────────────────────────────
 let authSession = null;
 let anonId = null;
+let editing = false;
 let current = { day: 1, streak: 0, doneToday: false, reminder: { enabled: false, time: '8:00 pm' } };
 
 const $ = (id) => document.getElementById(id);
@@ -19,14 +18,12 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const REMINDER_PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
 
-// ── Anon id ─────────────────────────────────────────────────────────────────
 function getOrCreateAnonId() {
   let id = localStorage.getItem('gratidude_anon_id');
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('gratidude_anon_id', id); }
   return id;
 }
 
-// ── API ─────────────────────────────────────────────────────────────────────
 async function api(path, body = {}, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const payload = { ...body };
@@ -37,94 +34,62 @@ async function api(path, body = {}, opts = {}) {
   return res.json();
 }
 
-// ── Nav ───────────────────────────────────────────────────────────────────
-// Two text links + the account icon. Text reads clearer than three glyphs.
-const PERSON_ICON = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="6.4" r="3.1"/><path d="M2.9 16.4c0-3.4 2.7-5.2 6.1-5.2s6.1 1.8 6.1 5.2"/></svg>';
-
-function paintNav() {
-  document.querySelectorAll('.navslot').forEach((slot) => {
-    const here = slot.dataset.here;
-    slot.innerHTML =
-      `<button class="link${here === 'journal' ? ' on' : ''}" type="button" data-go="journal">journal</button>`
-      + `<button class="link${here === 'habit' ? ' on' : ''}" type="button" data-go="habit">build the habit</button>`
-      + `<button class="ico${here === 'account' ? ' on' : ''}" type="button" data-go="login" aria-label="Account">${PERSON_ICON}</button>`;
-  });
-}
-
-// ── Screen routing ──────────────────────────────────────────────────────────
-const SCREENS = ['home', 'done', 'journal', 'habit', 'about', 'login'];
+// ── Screen routing + menu ───────────────────────────────────────────────────
+const SCREENS = ['home', 'journal', 'habit', 'about', 'login'];
 
 function show(name) {
-  if (name !== 'home') editing = false; // leaving home cancels an edit
+  if (name !== 'home') editing = false;
   SCREENS.forEach((s) => $(s).classList.toggle('on', s === name));
   window.scrollTo(0, 0);
-  if (name === 'home') { resetHome(); if (!current.doneToday || editing) $('g1').focus(); }
+  if (name === 'home') { paintHome(); if (!current.doneToday || editing) $('g1').focus(); }
   if (name === 'journal') loadJournal();
   if (name === 'habit') paintReminder();
   if (name === 'login') paintLogin();
 }
 
-// The account screen reflects whether you're signed in.
-function paintLogin() {
-  const signedIn = !!authSession;
-  $('login-card').hidden = signedIn;
-  $('login-sent').hidden = true;
-  $('login-in').hidden = !signedIn;
-  if (signedIn) {
-    $('account-email').textContent = authSession.user?.email ?? '';
-    $('login-in-head').textContent = 'Your account.';
-  }
+function toggleMenu(force) {
+  $('menu').classList.toggle('on', force === undefined ? undefined : force);
 }
 
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-menu]')) { e.preventDefault(); toggleMenu(); return; }
   const c = e.target.closest('[data-contact]');
-  if (c) { e.preventDefault(); openContact(c.dataset.contact); return; }
+  if (c) { e.preventDefault(); toggleMenu(false); openContact(c.dataset.contact); return; }
   const ed = e.target.closest('[data-edit]');
   if (ed) { e.preventDefault(); startEdit(); return; }
   const go = e.target.closest('[data-go]');
-  if (go) { e.preventDefault(); show(go.dataset.go); }
+  if (go) { e.preventDefault(); toggleMenu(false); show(go.dataset.go); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!$('contact-modal').hidden) closeContact();
+  else if ($('menu').classList.contains('on')) toggleMenu(false);
 });
 
-// ── Footer (injected into every .footslot) ──────────────────────────────────
-const FOOTER_HTML = `
-  <footer class="site-foot"><div class="foot-inner">
-    <nav class="foot-links">
-      <button class="foot-link" type="button" data-go="about">About</button>
-      <button class="foot-link" type="button" data-contact="general">Contact</button>
-      <button class="foot-link" type="button" data-contact="bug">Report a bug</button>
-      <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
-    </nav>
-    <p class="foot-by">by <a href="https://danberg.art" target="_blank" rel="noopener">Dan Berg</a></p>
-  </div></footer>`;
-function paintFooter() {
-  document.querySelectorAll('.footslot').forEach((s) => { s.innerHTML = FOOTER_HTML; });
-}
+// ── The command headline (writing state, one per load) ──────────────────────
+const COMMANDS = [
+  ['Give me three things you’re grateful for.', 'Then go away and come back tomorrow.'],
+  ['Three things.', 'Then clear off.'],
+  ['Right. Three things you’re grateful for,', 'and no waffling.'],
+  ['Name three things that didn’t ruin your day.', 'Go.'],
+  ['Three things. You’ve got the rest of the day', 'to do nothing.'],
+  ['I need three things.', 'Small ones count.'],
+  ['Grateful for what, exactly?', 'Three answers. Now.'],
+  ['Three things, then you’re dismissed.', 'Standard procedure.'],
+];
+const WRITING_CMD = COMMANDS[Math.floor(Math.random() * COMMANDS.length)];
+const writingCommandHTML = () => `${esc(WRITING_CMD[0])} <span class="dim">${esc(WRITING_CMD[1])}</span>`;
 
 // ── Rotating placeholders (a fresh three each visit) ────────────────────────
 const PLACEHOLDER_POOL = [
-  'My sports team not playing terribly',
-  'Having a beer with my friends',
-  'Lying in bed and watching TV',
-  'The bus turning up on time',
-  'Nobody sitting next to me on the train',
-  'A cup of tea at the right strength',
-  'Getting the good parking spot',
-  'My knees not hurting today',
-  'A biscuit that survived the dunk',
-  'The wifi actually working',
-  'Leftovers for lunch',
-  'Rain while I was already indoors',
-  'The dog being pleased to see me',
-  'A meeting that got cancelled',
-  'Someone else making the coffee',
-  'Clean sheets night',
-  'Toast, correctly browned',
-  'Payday landing a day early',
-  'A shower with decent water pressure',
-  'The kettle boiling before I got back',
-  'My team not conceding in the last minute',
-  'Getting a seat at the pub',
-  'Nobody replying to that email yet',
+  'My sports team not playing terribly', 'Having a beer with my friends', 'Lying in bed and watching TV',
+  'The bus turning up on time', 'Nobody sitting next to me on the train', 'A cup of tea at the right strength',
+  'Getting the good parking spot', 'My knees not hurting today', 'A biscuit that survived the dunk',
+  'The wifi actually working', 'Leftovers for lunch', 'Rain while I was already indoors',
+  'The dog being pleased to see me', 'A meeting that got cancelled', 'Someone else making the coffee',
+  'Clean sheets night', 'Toast, correctly browned', 'Payday landing a day early',
+  'A shower with decent water pressure', 'The kettle boiling before I got back',
+  'My team not conceding in the last minute', 'Getting a seat at the pub', 'Nobody replying to that email yet',
   'The bin men coming on the right day',
 ];
 function setPlaceholders() {
@@ -132,87 +97,54 @@ function setPlaceholders() {
   gs().forEach((el, i) => { el.placeholder = picks[i]; });
 }
 
-// ── Contact / bug modal ─────────────────────────────────────────────────────
-function openContact(type) {
-  const bug = type === 'bug';
-  $('contact-title').textContent = bug ? 'Report a bug.' : 'Get in touch.';
-  $('contact-sub').textContent = bug ? "What broke? Spare no detail." : 'Something to say? Make it brief.';
-  $('cm-send').textContent = 'Send it';
-  $('cm-send').disabled = false;
-  $('cm-ok').hidden = true; $('cm-ok').textContent = '';
-  $('contact-modal').dataset.type = type;
-  $('contact-modal').hidden = false;
-  $('cm-email').focus();
-}
-function closeContact() { $('contact-modal').hidden = true; }
-
-$('contact-close').addEventListener('click', closeContact);
-$('contact-modal').addEventListener('click', (e) => { if (e.target === $('contact-modal')) closeContact(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('contact-modal').hidden) closeContact(); });
-$('contact-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const message = $('cm-msg').value.trim();
-  if (!message) { $('cm-msg').focus(); return; }
-  $('cm-send').disabled = true; $('cm-send').textContent = 'Sending…';
-  try {
-    await api('/api/feedback', { email: $('cm-email').value.trim(), message, type: $('contact-modal').dataset.type });
-    $('cm-ok').textContent = 'Got it. Now sod off and have a day.';
-    $('cm-ok').hidden = false;
-    $('cm-msg').value = '';
-    setTimeout(closeContact, 1600);
-  } catch {
-    $('cm-ok').textContent = "Didn't send. Email hello@gratidude.ai instead.";
-    $('cm-ok').hidden = false;
-    $('cm-send').disabled = false; $('cm-send').textContent = 'Send it';
-  }
-});
-
-// ── Edit today's entries ────────────────────────────────────────────────────
-let editing = false;
-function startEdit() { editing = true; show('home'); }
-
-// ── Home ────────────────────────────────────────────────────────────────────
+// ── Home (writing / editing / done) ─────────────────────────────────────────
 const gs = () => [$('g1'), $('g2'), $('g3')];
 const filled = () => gs().every((i) => i.value.trim());
 
-function resetHome() {
+function paintHome() {
   const done = !!current.doneToday && !editing;
-  // Three modes: writing (fresh), editing (today's entries, pre-filled), and a
-  // clean "already done" recap - never a pre-filled form that looks unfinished.
-  $('box').hidden = done;
-  document.querySelector('#home .btns').hidden = done;
-  $('metarow').hidden = done;
-  $('privacy-note').hidden = done || editing;
-  document.querySelector('#home .prompt').hidden = done;
-  $('home-done').hidden = !done;
+
+  $('logged-stamp').hidden = !done;
+  $('form').hidden = done;
+  $('write-actions').hidden = done;
+  $('privacy-micro').hidden = done;
+  $('done-fields').hidden = !done;
+  $('done-actions').hidden = !done;
+  $('save-nudge').hidden = !(done && !authSession);
 
   if (done) {
-    $('home-logged').innerHTML = (current.todayItems ?? []).map((t, i) =>
-      `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
+    $('done-fields').innerHTML = (current.todayItems ?? []).map((t, i) =>
+      `<div class="row"><span class="n">0${i + 1}</span><p class="read">${esc(t)}</p></div>`).join('');
+    handleNote(); // sets #cmd to the day's verdict
     return;
   }
 
   if (editing) {
-    gs().forEach((i, n) => { i.value = current.todayItems?.[n] ?? ''; });
+    $('cmd').innerHTML = 'Changed your mind. <span class="dim">Get on with it.</span>';
+    gs().forEach((i, n) => { i.value = current.todayItems?.[n] ?? ''; i.closest('.row').classList.toggle('filled', !!i.value.trim()); });
     $('submit').textContent = 'Save changes';
   } else {
-    gs().forEach((i) => { i.value = ''; });
+    $('cmd').innerHTML = writingCommandHTML();
+    gs().forEach((i) => { i.value = ''; i.closest('.row').classList.remove('filled'); });
     setPlaceholders();
     $('submit').textContent = 'Submit';
   }
-  $('daycount').textContent = `day ${current.day}`;
   $('submit').disabled = !filled();
 }
 
+function startEdit() { editing = true; show('home'); }
+
+$('form').addEventListener('input', (e) => {
+  const row = e.target.closest('.row');
+  if (row) row.classList.toggle('filled', !!e.target.value.trim());
+  $('submit').disabled = !filled();
+});
 gs().forEach((el, i) => {
-  el.addEventListener('input', () => { $('submit').disabled = !filled(); });
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { if (!$('submit').disabled) $('submit').click(); return; }
     if (e.key === 'Enter') { e.preventDefault(); if (i < 2) gs()[i + 1].focus(); else if (!$('submit').disabled) $('submit').click(); }
   });
 });
-
-$('box').addEventListener('click', (e) => { if (!e.target.matches('input')) $('g1').focus(); });
 
 $('submit').addEventListener('click', async () => {
   if (!filled()) return;
@@ -220,40 +152,16 @@ $('submit').addEventListener('click', async () => {
   $('submit').disabled = true;
   try {
     const data = await api('/api/submit', { items });
-    current = { ...current, ...data, monthCount: (current.monthCount ?? 0) + 1 };
-    editing = false;
-    journalCache = null; // entry changed - refetch on next journal open
-    renderDone(items);
-    show('done');
+    current = { ...current, ...data };
   } catch {
-    $('submit').disabled = false;
-    // Fall back to showing the logged state locally so nothing feels lost.
-    renderDone(items);
-    show('done');
+    current = { ...current, doneToday: true, todayItems: items, todayDayNum: current.todayDayNum ?? current.day, noteReady: false, todayNote: null };
   }
+  editing = false;
+  journalCache = null;
+  show('home');
 });
 
-// ── Done ────────────────────────────────────────────────────────────────────
-// Rotating confirmation heading - deterministic by day number, dry, never keen.
-const HEADINGS = [
-  'Logged.', 'Logged. Slow clap.', 'Logged. Barely.', 'Logged, obviously.',
-  'Logged. Steady on.', 'Noted.', 'Filed.', 'Filed away.', 'On the record.',
-  'Duly noted.', 'Received.', 'In the book.', "That'll do.", 'Fine. Logged.',
-  'Counted.', 'Banked.', 'Stamped.', 'Three things, logged.',
-  'Recorded, reluctantly.', 'Sorted.', 'Down in writing.', 'Logged. Look at you.',
-  'Done and logged.', 'Accepted.',
-];
-const MILESTONES = { 1: 'First one down.', 7: 'A week of this.', 30: 'Thirty days.', 100: 'One hundred.' };
-
-function pickHeading(dayNum) {
-  const d = Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1;
-  if (MILESTONES[d]) return MILESTONES[d];
-  if (d > 100 && d % 50 === 0) return `Day ${d}.`;
-  return HEADINGS[d % HEADINGS.length];
-}
-
-// Stock sarcastic-drill-instructor lines. They praise showing up, never the
-// content, so they sit fine on top of anything. Deterministic per day.
+// ── The day's verdict (the sarcastic pay-off in the command slot) ───────────
 const SUBQUIPS = [
   "Slow clap. You'll be a Zen master in no time.",
   "Namaste. You're really doing it.",
@@ -270,105 +178,57 @@ const SUBQUIPS = [
   "Big day for your spiritual growth. Enormous.",
   "Done. You're basically the Dalai Lama with wifi.",
 ];
-function pickQuip(dayNum) {
-  const d = Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1;
-  return SUBQUIPS[d % SUBQUIPS.length];
-}
+const pickQuip = (dayNum) => SUBQUIPS[(Number.isFinite(dayNum) && dayNum > 0 ? dayNum : 1) % SUBQUIPS.length];
 
-function renderDone(items) {
-  $('done-head').textContent = pickHeading(current.todayDayNum ?? current.day);
-  $('logged').innerHTML = items.map((t, i) =>
-    `<div class="g"><span class="n">0${i + 1}</span><span class="t">${esc(t)}</span></div>`).join('');
-
-  $('mcount').textContent = `${current.monthCount ?? 0} this month`;
-
-  const recent = (current.recent ?? []).filter((r) => r && r.date);
-  $('recent').innerHTML = recent.map((r) => {
-    const nice = fmtRecent(r.date);
-    const first = (r.items?.[0] ?? '').trim();
-    return `<div class="r"><span class="rd">${nice}</span><span class="rt">${esc(first)}…</span></div>`;
-  }).join('');
-  $('recent').parentElement.hidden = recent.length === 0;
-
-  // Signed-in users are already saved; only anon users get the save nudge.
-  $('done-save').hidden = !!authSession;
-
-  handleNote();
-}
-
-// The hero line of the Logged screen.
 function showQuote(text, fade) {
-  if (!text) { $('quote').hidden = true; $('done-sub').hidden = false; return; }
-  $('quote-text').textContent = `“${text}”`;
-  $('done-sub').hidden = true;
-  $('quote').hidden = false;
-  if (fade) { $('quote').classList.remove('in'); void $('quote').offsetWidth; $('quote').classList.add('in'); }
+  if (!text) return;
+  $('cmd').textContent = text;
+  if (fade) { $('cmd').style.opacity = '0'; requestAnimationFrame(() => { $('cmd').style.transition = 'opacity .2s linear'; $('cmd').style.opacity = '1'; }); }
 }
 
-// The first few days get a guaranteed stock quip - instant, reliable, on-tone.
-// From day 4 the drill instructor reads your actual three and takes the piss
-// specifically; a safety pass makes it drop the act on anything heavy (it then
-// returns nothing, and the stock quip stays).
+// Days 1-3: guaranteed stock verdict. Day 4+: the drill instructor reads your
+// three and takes the piss; a safety pass drops the act on anything heavy.
 async function handleNote() {
   const dayNum = current.todayDayNum ?? current.day;
   showQuote(pickQuip(dayNum), true);
-
   if (dayNum <= 3) return;
   if (current.noteReady) { if (current.todayNote) showQuote(current.todayNote, false); return; }
 
   const fetchNote = async (timeout) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeout);
-    try {
-      const data = await api('/api/note', {}, { signal: ctrl.signal });
-      return data.note ?? null;
-    } finally { clearTimeout(timer); }
+    try { const data = await api('/api/note', {}, { signal: ctrl.signal }); return data.note ?? null; }
+    finally { clearTimeout(timer); }
   };
-
   try {
     const note = await fetchNote(10000);
-    current.noteReady = true;
-    current.todayNote = note;
+    current.noteReady = true; current.todayNote = note;
     if (note) showQuote(note, true);
   } catch {
-    try {
-      await delay(1500);
-      const note = await fetchNote(6000);
-      current.noteReady = true;
-      current.todayNote = note;
-      if (note) showQuote(note, true);
-    } catch { /* keep the stock quip - screen is complete */ }
+    try { await delay(1500); const note = await fetchNote(6000); current.noteReady = true; current.todayNote = note; if (note) showQuote(note, true); }
+    catch { /* keep the stock verdict */ }
   }
-}
-
-function fmtRecent(iso) {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
 }
 
 // ── Journal ─────────────────────────────────────────────────────────────────
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
 function fmtDay(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
 }
-
 let journalCache = null;
 
 function renderJournal(data) {
-  const summary = $('j-summary');
   const total = data.stats.allTime ?? 0;
   const streak = data.stats.streak ?? 0;
   const bits = [];
   if (total) bits.push(`${total} ${total === 1 ? 'entry' : 'entries'}`);
   if (streak > 0) bits.push(`${streak}-day streak`);
-  summary.textContent = bits.join('  ·  ');
-  summary.hidden = bits.length === 0;
+  $('j-summary').textContent = bits.join('  ·  ');
+  $('j-summary').hidden = bits.length === 0;
 
   const list = $('j-list');
   const todayIso = new Date().toISOString().slice(0, 10);
-
   if (!data.entries.length) { list.innerHTML = ''; $('j-empty').hidden = false; return; }
   $('j-empty').hidden = true;
 
@@ -388,20 +248,17 @@ function renderJournal(data) {
 }
 
 async function loadJournal() {
-  // Show cached entries instantly, then refresh in the background.
   if (journalCache) { renderJournal(journalCache); }
   else { $('j-list').innerHTML = ''; $('j-summary').hidden = true; $('j-empty').hidden = true; $('j-loading').hidden = false; }
-
   let data;
   try { data = await api('/api/journal'); }
   catch { data = journalCache ?? { entries: [], stats: { streak: current.streak, thisMonth: 0, allTime: 0 } }; }
-
   journalCache = data;
   $('j-loading').hidden = true;
   renderJournal(data);
 }
 
-// ── About: reminders ────────────────────────────────────────────────────────
+// ── Build the habit: reminders ──────────────────────────────────────────────
 function paintReminder() {
   const { enabled, time } = current.reminder;
   $('rem-sw').setAttribute('aria-checked', enabled);
@@ -417,25 +274,17 @@ function paintReminder() {
   custom.classList.toggle('off', !enabled);
   if (isCustom) $('rem-ct').value = /^\d{2}:\d{2}$/.test(time) ? time : '20:00';
 }
-
 async function saveReminder(patch) {
   current.reminder = { ...current.reminder, ...patch };
   paintReminder();
   try { const d = await api('/api/settings', current.reminder); if (d.reminder) current.reminder = d.reminder; }
   catch { /* keep optimistic value */ }
 }
-
-$('rem-sw').addEventListener('click', () => {
-  saveReminder({ enabled: current.reminder.enabled ? false : requestNotifyThenTrue() });
-});
-// Ask for notification permission the moment they turn it on (never on load).
 function requestNotifyThenTrue() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission().catch(() => {});
-  }
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
   return true;
 }
-
+$('rem-sw').addEventListener('click', () => saveReminder({ enabled: current.reminder.enabled ? false : requestNotifyThenTrue() }));
 $('rem-times').addEventListener('click', (e) => {
   const b = e.target.closest('[data-rem]');
   if (!b) return;
@@ -451,23 +300,63 @@ $('contact').addEventListener('submit', async () => {
   if (!msg) return;
   $('c-send').disabled = true;
   try {
-    await api('/api/feedback', { message: email ? `${email}: ${msg}` : msg });
+    await api('/api/feedback', { email, message: msg, type: 'general' });
     $('c-msg').value = ''; $('c-email').value = '';
-    const ok = $('c-ok'); ok.textContent = 'Got it. Cheers.'; ok.hidden = false;
+    const ok = $('c-ok'); ok.textContent = 'Got it. Now sod off and have a day.'; ok.hidden = false;
   } catch {
-    const ok = $('c-ok'); ok.textContent = "Didn't send - try the email link below."; ok.hidden = false;
+    const ok = $('c-ok'); ok.textContent = "Didn't send — email hello@gratidude.ai instead."; ok.hidden = false;
   }
   $('c-send').disabled = false;
 });
 
-// ── Login: magic link ───────────────────────────────────────────────────────
+// ── Contact / bug modal ─────────────────────────────────────────────────────
+function openContact(type) {
+  const bug = type === 'bug';
+  $('contact-title').textContent = bug ? 'Report a bug.' : 'Get in touch.';
+  $('contact-sub').textContent = bug ? 'What broke? Spare no detail.' : 'Something to say? Make it brief.';
+  $('cm-send').textContent = 'Send it'; $('cm-send').disabled = false;
+  $('cm-ok').hidden = true; $('cm-ok').textContent = '';
+  $('contact-modal').dataset.type = type;
+  $('contact-modal').hidden = false;
+  $('cm-email').focus();
+}
+function closeContact() { $('contact-modal').hidden = true; }
+$('contact-close').addEventListener('click', closeContact);
+$('contact-modal').addEventListener('click', (e) => { if (e.target === $('contact-modal')) closeContact(); });
+$('contact-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const message = $('cm-msg').value.trim();
+  if (!message) { $('cm-msg').focus(); return; }
+  $('cm-send').disabled = true; $('cm-send').textContent = 'Sending…';
+  try {
+    await api('/api/feedback', { email: $('cm-email').value.trim(), message, type: $('contact-modal').dataset.type });
+    $('cm-ok').textContent = 'Got it. Now sod off and have a day.'; $('cm-ok').hidden = false;
+    $('cm-msg').value = '';
+    setTimeout(closeContact, 1600);
+  } catch {
+    $('cm-ok').textContent = "Didn't send. Email hello@gratidude.ai instead.";
+    $('cm-ok').hidden = false;
+    $('cm-send').disabled = false; $('cm-send').textContent = 'Send it';
+  }
+});
+
+// ── Account / sign in ───────────────────────────────────────────────────────
+function paintLogin() {
+  const signedIn = !!authSession;
+  $('login-card').hidden = signedIn;
+  $('login-sent').hidden = true;
+  $('login-in').hidden = !signedIn;
+  if (signedIn) {
+    $('account-email').textContent = authSession.user?.email ?? '';
+    $('login-in-head').textContent = 'Your account.';
+  }
+}
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 $('email').addEventListener('input', () => {
   $('signin-btn').disabled = !EMAIL_RE.test($('email').value.trim());
   $('login-error').textContent = '';
 });
 $('signin-btn').disabled = true;
-
 $('signin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('email').value.trim();
@@ -475,88 +364,58 @@ $('signin').addEventListener('submit', async (e) => {
   const btn = $('signin-btn');
   btn.disabled = true; btn.textContent = 'Sending…';
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-  if (error) {
-    $('login-error').textContent = "didn't send. try again.";
-    btn.disabled = false; btn.textContent = 'Send me a link';
-    return;
-  }
+  if (error) { $('login-error').textContent = "didn't send. try again."; btn.disabled = false; btn.textContent = 'Send me a link'; return; }
   $('sent-to').textContent = email;
   $('login-card').hidden = true;
   $('login-sent').hidden = false;
 });
+$('signout-btn')?.addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 
-// ── Rotating word (home) ────────────────────────────────────────────────────
-(function rotor() {
-  const slot = $('slot'), reel = slot.querySelector('.reel');
-  const words = ['dudes', 'blokes', 'straight-talkers', 'yoga-haters', 'bad bitches', 'rationalists', 'cynics', 'overthinkers', 'sceptics', 'pessimists', 'doom-scrollers'].sort(() => Math.random() - 0.5);
-  const cls = words.map((_, i) => 'w' + (i % 5 + 1));
-  reel.innerHTML = words.concat(words[0]).map((w, i) => `<span class="${i < words.length ? cls[i] : cls[0]}">${w}</span>`).join('');
-  slot.setAttribute('aria-label', words[0]);
+// ── Rotating tagline word (your pool, fade swap) ────────────────────────────
+const WHO = ['dudes', 'blokes', 'straight-talkers', 'yoga-haters', 'bad bitches', 'rationalists', 'cynics', 'overthinkers', 'sceptics', 'pessimists', 'doom-scrollers'];
+(function taglineRotor() {
+  const el = $('who');
+  let wi = Math.floor(Math.random() * WHO.length);
+  el.textContent = WHO[wi];
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  let si = 0;
   setInterval(() => {
-    si++;
-    reel.style.transition = 'transform .42s cubic-bezier(.4,0,.2,1)';
-    reel.style.transform = `translateY(-${si * 1.5}em)`;
-    slot.setAttribute('aria-label', words[si % words.length]);
-    if (si === words.length) setTimeout(() => { reel.style.transition = 'none'; reel.style.transform = 'none'; si = 0; }, 440);
-  }, 1600);
+    wi = (wi + 1) % WHO.length;
+    el.classList.add('out');
+    setTimeout(() => { el.textContent = WHO[wi]; el.classList.remove('out'); }, 200);
+  }, 2600);
 })();
 
 // ── Auth transfer + boot ────────────────────────────────────────────────────
 async function activate(session) {
   try {
-    await fetch('/api/activate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ anonId }),
-    });
+    await fetch('/api/activate', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ anonId }) });
   } catch { /* non-fatal */ }
   history.replaceState(null, '', window.location.pathname);
 }
 
-// Fires when the magic link completes. INITIAL_SESSION (a restored session on
-// load) is handled by init() instead, so we only react to a genuine sign-in.
 sb.auth.onAuthStateChange(async (event, session) => {
   if (event !== 'SIGNED_IN' || !session) return;
   if (authSession?.access_token === session.access_token) return;
   authSession = session;
   await activate(session);
   try { const st = await api('/api/state'); current = { ...current, ...st }; } catch { /* non-fatal */ }
-  // Land on a clear confirmation, not a page that looks logged-out.
   show('login');
   $('login-in-head').textContent = "You're in.";
-});
-
-document.getElementById('signout-btn')?.addEventListener('click', async () => {
-  await sb.auth.signOut();
-  location.reload();
 });
 
 async function boot() {
   let state = null;
   try { state = await api('/api/state'); } catch { /* fresh, offline, or brand new */ }
   if (state) current = { ...current, ...state };
-
   paintReminder();
-
-  if (current.doneToday) {
-    renderDone(current.todayItems ?? []);
-    show('done');
-  } else {
-    show('home');
-  }
+  show('home');
 }
 
 async function init() {
   anonId = getOrCreateAnonId();
-  paintNav();
-  paintFooter();
   const { data: { session } } = await sb.auth.getSession();
   if (session) { authSession = session; await activate(session); }
 
-  // Arrived by clicking the email link: confirm the sign-in explicitly rather
-  // than dropping them on a page that looks the same as when logged out.
   if (CAME_FROM_MAGIC_LINK && authSession) {
     history.replaceState(null, '', window.location.pathname);
     try { const st = await api('/api/state'); current = { ...current, ...st }; } catch { /* non-fatal */ }
@@ -564,7 +423,6 @@ async function init() {
     $('login-in-head').textContent = "You're in.";
     return;
   }
-
   await boot();
 }
 
