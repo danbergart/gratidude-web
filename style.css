@@ -106,8 +106,8 @@ a:hover { color: var(--signal); }
 .micro { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-faint); }
 .save-nudge { margin: 0; }
 
-.foot { display: flex; justify-content: flex-end; align-items: flex-end; gap: 16px; }
-.tagline { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-faint); }
+.foot { display: flex; align-items: flex-end; gap: 24px; }
+.tagline { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-faint); margin-left: auto; }
 .tagline .who { color: var(--bone); display: inline-block; min-width: 24ch; text-align: left; transition: opacity .18s linear; }
 .tagline .who.out { opacity: 0; }
 
@@ -156,8 +156,8 @@ a:hover { color: var(--signal); }
 .custom input { background: none; border: 1px solid var(--rule); color: var(--bone); font-family: var(--mono); font-size: 14px; padding: 8px 10px; }
 
 /* About extras */
-blockquote { border-left: 2px solid var(--signal); padding-left: 18px; }
-blockquote p { font-family: var(--body); font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--bone); font-style: italic; margin: 0 0 10px; max-width: 56ch; }
+blockquote { border-left: 2px solid var(--signal); padding-left: 22px; }
+blockquote p { font-family: var(--body); font-size: clamp(20px, 2.8vw, 28px); line-height: 1.45; color: var(--bone); font-style: italic; margin: 0 0 12px; max-width: 72ch; }
 blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--bone-faint); font-style: normal; }
 .version { margin-top: 40px; }
 
@@ -187,6 +187,7 @@ blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spac
 ══════════════════════════════════ */
 .authwrap { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; max-width: 460px; margin: 0 auto; width: 100%; }
 .authcard { width: 100%; }
+.authcard .command.sm { margin-bottom: 14px; }
 .authcard .marker { margin-bottom: 24px; }
 .authcard .btn { display: block; width: 100%; margin-top: 4px; }
 .authcard .ghost { margin-top: 18px; }
@@ -235,8 +236,8 @@ blockquote .who-quote { font-family: var(--mono); font-size: 10.5px; letter-spac
   .micro { font-size: 10px; letter-spacing: .12em; text-align: center; }
   .actions .ghost { align-self: center; padding: 6px 0; }
   .save-nudge { text-align: center; }
-  .foot { align-items: center; justify-content: center; padding-top: 14px; }
-  .tagline { font-size: 10px; letter-spacing: .1em; text-align: center; }
+  .foot { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding-top: 14px; }
+  .tagline { font-size: 10px; letter-spacing: .1em; text-align: center; margin-left: 0; }
   .tagline .who { min-width: 0; }
   .menubtn { padding: 8px 0; font-size: 13px; }
   .sheet { padding-top: 20px; }

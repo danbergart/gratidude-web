@@ -156,7 +156,7 @@ $('submit').addEventListener('click', async () => {
 const SUBQUIPS = [
   "Slow clap. You'll be a Zen master in no time.",
   "Namaste. You're really doing it.",
-  "Good boy. Pat on the head.",
+  "Well done.\nPat on the head.",
   "Three whole things. Extraordinary scenes.",
   "Look at you, feeling things on purpose.",
   "That's the bare minimum and you cleared it. Proud, sort of.",
@@ -173,7 +173,7 @@ const pickQuip = (dayNum) => SUBQUIPS[(Number.isFinite(dayNum) && dayNum > 0 ? d
 
 function showQuote(text, fade) {
   if (!text) return;
-  $('cmd').textContent = text;
+  $('cmd').innerHTML = esc(text).replace(/\n/g, '<br>');
   if (fade) { $('cmd').style.opacity = '0'; requestAnimationFrame(() => { $('cmd').style.transition = 'opacity .2s linear'; $('cmd').style.opacity = '1'; }); }
 }
 
