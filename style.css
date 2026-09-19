@@ -142,6 +142,7 @@ a:hover { color: var(--signal); }
 .tagline { font-family: var(--mono); font-size: var(--fs-min); letter-spacing: var(--track); text-transform: uppercase; color: var(--bone-faint); margin-left: auto; }
 .tagline .who { color: var(--bone); display: inline-block; min-width: 20ch; text-align: left; transition: opacity .18s linear; }
 .tagline .who.out { opacity: 0; }
+.tagline .tag-short { display: none; }
 
 /* ══════════════════════════════════
    INNER SHEETS (journal, habit, about, account)
@@ -272,6 +273,9 @@ a:hover { color: var(--signal); }
   .foot { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding-top: 14px; }
   .tagline { text-align: center; margin-left: 0; letter-spacing: .02em; }
   .tagline .who { min-width: 0; }
+  /* The wordmark is already at the top of the screen, so the phone tagline drops "Gratidude," to fit one line. */
+  .tagline .tag-long { display: none; }
+  .tagline .tag-short { display: inline; }
   .sheet { padding-top: 20px; }
   #menu { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   #menu .mlinks { gap: 2px; }

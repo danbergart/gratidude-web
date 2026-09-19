@@ -1,11 +1,12 @@
 // Save today's three gratitudes. No AI, no character - just store and advance.
 import { supabase, todayStr, yesterdayStr, json, preflight, loadSession } from '../lib/session.mjs';
 import { pickResurfaced } from '../lib/resurface.mjs';
+import { ping } from '../lib/notify.mjs';
 
 const MAX_ITEM_LEN = 280;
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_ITEM_LEN);
 
-export default async (req) => {
+export default async (req, context) => {
   if (req.method === 'OPTIONS') return preflight();
 
   const { anonId, items } = await req.json();
@@ -79,6 +80,11 @@ export default async (req) => {
     last_streak_date: today,
     last_session_date: today,
   }).eq('id', id);
+
+  const who = userId ? 'someone with an account' : 'someone without an account';
+  ping(context, dayNum === 1
+    ? `New writer: ${who} just logged their first three.`
+    : `Day ${dayNum}: ${who} just logged their three (streak ${newStreak}).`);
 
   return json({ day: dayNum, todayDayNum: dayNum, streak: newStreak, doneToday: true, todayItems: three, resurfaced, noteReady: false });
 };

@@ -1,7 +1,8 @@
 // Transfers an anonymous session (state, settings and journal) to a user account.
 import { supabase, json, preflight, getUserId } from '../lib/session.mjs';
+import { ping } from '../lib/notify.mjs';
 
-export default async (req) => {
+export default async (req, context) => {
   if (req.method === 'OPTIONS') return preflight();
 
   const userId = await getUserId(req);
@@ -16,7 +17,7 @@ export default async (req) => {
       .from('anon_sessions').select('*').eq('id', anonId).eq('transferred', false).single();
 
     if (anon) {
-      await supabase.from('web_users').insert({
+      const { error: insertErr } = await supabase.from('web_users').insert({
         id: userId,
         day: anon.day,
         grats_today: anon.grats_today,
@@ -36,14 +37,20 @@ export default async (req) => {
       });
 
       // Move the journal across, then retire the anonymous row.
+      const { count: carried } = await supabase.from('entries').select('id', { count: 'exact', head: true }).eq('anon_id', anonId);
       await supabase.from('entries').update({ user_id: userId, anon_id: null }).eq('anon_id', anonId);
       await supabase.from('anon_sessions').update({ transferred: true }).eq('id', anonId);
 
+      // Only the call that actually created the account pings (activate can race with itself on sign-in).
+      if (!insertErr) ping(context, `New account. They brought ${carried ?? 0} day${carried === 1 ? '' : 's'} of entries with them.`);
       return json({ ok: true, transferred: true });
     }
   }
 
-  if (!existing) await supabase.from('web_users').insert({ id: userId });
+  if (!existing) {
+    const { error: insertErr } = await supabase.from('web_users').insert({ id: userId });
+    if (!insertErr) ping(context, 'New account (signed up before writing anything).');
+  }
 
   return json({ ok: true, transferred: false });
 };
