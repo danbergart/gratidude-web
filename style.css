@@ -206,6 +206,7 @@ a:hover { color: var(--signal); }
 .faq-item[open] summary::after { display: none; }
 .faq-item summary:hover { color: var(--signal); }
 .faq-item p { margin-top: 12px; }
+.faq-item p a { text-decoration: underline; text-underline-offset: 3px; }
 
 /* Forms (contact component, sign in) */
 .field { margin-bottom: 16px; }
@@ -269,13 +270,14 @@ a:hover { color: var(--signal); }
   .actions .ghost { align-self: center; padding: 6px 0; }
   .save-nudge { text-align: center; }
   .foot { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding-top: 14px; }
-  .tagline { text-align: center; margin-left: 0; }
+  .tagline { text-align: center; margin-left: 0; letter-spacing: .02em; }
   .tagline .who { min-width: 0; }
   .sheet { padding-top: 20px; }
   #menu { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   #menu .mlinks { gap: 2px; }
   #menu .mlinks a { font-size: clamp(32px, 10vw, 48px); padding: 4px 0; }
   #menu .mfoot { gap: 10px 18px; padding-top: 16px; }
+  #menu .mfoot .marker { font-size: var(--fs-min); letter-spacing: .02em; }
   .modal-card { padding: 44px 22px 24px; }
 }
 @media (max-width: 760px) and (max-height: 680px) {
