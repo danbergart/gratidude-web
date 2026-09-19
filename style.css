@@ -153,8 +153,9 @@ a:hover { color: var(--signal); }
 
 .block { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 28px; }
 .block > .marker.sig { margin-bottom: 18px; }
-.block p:not(.marker) { font-family: var(--body); font-size: 16px; line-height: 1.65; color: var(--bone-dim); margin: 0 0 14px; max-width: 56ch; }
-.block p:not(.marker):last-child { margin-bottom: 0; }
+/* :where() keeps this low-specificity so component rules (.faq-item p, .times ~ .note) can adjust it. */
+:where(.block) p:not(.marker) { font-family: var(--body); font-size: 16px; line-height: 1.65; color: var(--bone-dim); margin: 0 0 14px; max-width: 56ch; }
+:where(.block) p:not(.marker):last-child { margin-bottom: 0; }
 .block p b { color: var(--bone); }
 .note { font-family: var(--body); font-size: var(--fs-act); line-height: 1.6; color: var(--bone-faint); }
 .note.ok { color: var(--signal); }
@@ -242,7 +243,7 @@ a:hover { color: var(--signal); }
 .modal { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(0,0,0,.72); }
 .modal-card { position: relative; width: 100%; max-width: 460px; background: var(--ink); border: 1px solid var(--rule); padding: 44px 32px 32px; }
 .modal-card #contact-close { position: absolute; top: 22px; right: 24px; margin: -14px -12px; }
-.modal-card h2 { margin: 0 0 10px; }
+.modal-card h2 { margin: 0 0 16px; }
 .modal-card > .marker { margin-bottom: 28px; }
 .modal-card .field { margin-bottom: 20px; }
 .modal-card .btn { display: block; width: 100%; margin-top: 8px; }
