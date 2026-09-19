@@ -11,11 +11,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authSession = null;
 let anonId = null;
 let editing = false;
-let current = { day: 1, streak: 0, doneToday: false, reminder: { enabled: false, time: '8:00 pm' } };
+let current = { day: 1, streak: 0, doneToday: false };
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const REMINDER_PRESETS = ['7:00 am', '12:00 pm', '6:00 pm', '8:00 pm', '9:30 pm'];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getOrCreateAnonId() {
   let id = localStorage.getItem('gratidude_anon_id');
@@ -23,14 +23,30 @@ function getOrCreateAnonId() {
   return id;
 }
 
-async function api(path, body = {}, opts = {}) {
+// Every API call gets a hard timeout, so a stalled request can never leave a
+// screen hanging on a loading state.
+async function api(path, body = {}, { timeout = 8000 } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const payload = { ...body };
   if (authSession) headers.Authorization = `Bearer ${authSession.access_token}`;
   else payload.anonId = anonId;
-  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload), signal: opts.signal });
-  if (!res.ok) { const e = new Error(path); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
-  return res.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(payload), signal: ctrl.signal });
+    if (!res.ok) { const e = new Error(path); e.status = res.status; e.body = await res.json().catch(() => ({})); throw e; }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// One rule for every primary button: disabled until its form is valid.
+function gate(btn, isValid, fields) {
+  const update = () => { btn.disabled = !isValid(); };
+  fields.forEach((f) => f.addEventListener('input', update));
+  update();
+  return update;
 }
 
 // ── Screen routing + menu ───────────────────────────────────────────────────
@@ -42,7 +58,6 @@ function show(name) {
   window.scrollTo(0, 0);
   if (name === 'home') { paintHome(); if (!current.doneToday || editing) $('g1').focus(); }
   if (name === 'journal') loadJournal();
-  if (name === 'habit') paintReminder();
   if (name === 'login') paintLogin();
 }
 
@@ -52,13 +67,15 @@ function toggleMenu(force) {
 
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-menu]')) { e.preventDefault(); toggleMenu(); return; }
-  const c = e.target.closest('[data-contact]');
-  if (c) { e.preventDefault(); toggleMenu(false); openContact(c.dataset.contact); return; }
+  if (e.target.closest('[data-contact]')) { e.preventDefault(); toggleMenu(false); openContact(); return; }
   const ed = e.target.closest('[data-edit]');
   if (ed) { e.preventDefault(); startEdit(); return; }
   const go = e.target.closest('[data-go]');
   if (go) {
-    e.preventDefault(); toggleMenu(false); show(go.dataset.go);
+    e.preventDefault(); toggleMenu(false);
+    // Already home: don't repaint, or the wordmark would wipe half-typed entries.
+    if (go.dataset.go === 'home' && $('home').classList.contains('on')) { window.scrollTo(0, 0); return; }
+    show(go.dataset.go);
     const anchor = go.dataset.anchor && $(go.dataset.anchor);
     if (anchor) requestAnimationFrame(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
@@ -88,7 +105,7 @@ const PLACEHOLDER_POOL = [
 ];
 function setPlaceholders() {
   const picks = [...PLACEHOLDER_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
-  gs().forEach((el, i) => { el.placeholder = picks[i]; });
+  gs().forEach((el, i) => { el.placeholder = `e.g. ${picks[i]}`; });
 }
 
 // ── Home (writing / editing / done) ─────────────────────────────────────────
@@ -123,15 +140,15 @@ function paintHome() {
     setPlaceholders();
     $('submit').textContent = 'Submit';
   }
-  $('submit').disabled = !filled();
+  updateSubmit();
 }
 
 function startEdit() { editing = true; show('home'); }
 
+const updateSubmit = gate($('submit'), filled, gs());
 $('form').addEventListener('input', (e) => {
   const row = e.target.closest('.row');
   if (row) row.classList.toggle('filled', !!e.target.value.trim());
-  $('submit').disabled = !filled();
 });
 gs().forEach((el, i) => {
   el.addEventListener('keydown', (e) => {
@@ -214,7 +231,7 @@ function renderJournal(data) {
   for (const e of data.entries) {
     const [y, m] = e.date.split('-').map(Number);
     const label = `${MONTHS[m - 1]} ${y}`;
-    if (label !== lastMonth) { html += `<p class="mlabel">${label}</p>`; lastMonth = label; }
+    if (label !== lastMonth) { html += `<p class="marker mlabel">${label}</p>`; lastMonth = label; }
     const isToday = e.date === todayIso;
     const dateLine = isToday ? `Today <span class="dsub">${fmtDay(e.date)}</span>` : fmtDay(e.date);
     html += `<div class="entry${isToday ? ' is-today' : ''}"><div class="ehd"><span class="d">${dateLine}</span></div>`
@@ -224,98 +241,80 @@ function renderJournal(data) {
   list.innerHTML = html;
 }
 
+// A failed load shows an error with a retry, never a fake empty journal.
+// Only the latest request may update the screen.
+let journalReq = 0;
 async function loadJournal() {
-  if (journalCache) { renderJournal(journalCache); }
+  const req = ++journalReq;
+  $('j-error').hidden = true;
+  if (journalCache) renderJournal(journalCache);
   else { $('j-list').innerHTML = ''; $('j-summary').hidden = true; $('j-empty').hidden = true; $('j-loading').hidden = false; }
-  let data;
-  try { data = await api('/api/journal'); }
-  catch { data = journalCache ?? { entries: [], stats: { streak: current.streak, thisMonth: 0, allTime: 0 } }; }
-  journalCache = data;
-  $('j-loading').hidden = true;
-  renderJournal(data);
-}
-
-// ── Build the habit: reminders ──────────────────────────────────────────────
-function paintReminder() {
-  const { enabled, time } = current.reminder;
-  $('rem-sw').setAttribute('aria-checked', enabled);
-  const isCustom = !REMINDER_PRESETS.includes(time);
-  const chips = [...REMINDER_PRESETS, 'Custom'];
-  $('rem-times').innerHTML = chips.map((t) => {
-    const on = t === 'Custom' ? isCustom : t === time;
-    return `<button class="time${on ? ' on' : ''}" type="button" data-rem="${t}">${t}</button>`;
-  }).join('');
-  $('rem-times').classList.toggle('off', !enabled);
-  const custom = $('rem-custom');
-  custom.hidden = !isCustom;
-  custom.classList.toggle('off', !enabled);
-  if (isCustom) $('rem-ct').value = /^\d{2}:\d{2}$/.test(time) ? time : '20:00';
-}
-async function saveReminder(patch) {
-  current.reminder = { ...current.reminder, ...patch };
-  paintReminder();
-  try { const d = await api('/api/settings', current.reminder); if (d.reminder) current.reminder = d.reminder; }
-  catch { /* keep optimistic value */ }
-}
-function requestNotifyThenTrue() {
-  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
-  return true;
-}
-$('rem-sw').addEventListener('click', () => saveReminder({ enabled: current.reminder.enabled ? false : requestNotifyThenTrue() }));
-$('rem-times').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-rem]');
-  if (!b) return;
-  if (b.dataset.rem === 'Custom') { saveReminder({ time: $('rem-ct').value || '20:00' }); setTimeout(() => $('rem-ct').focus(), 0); }
-  else saveReminder({ time: b.dataset.rem });
-});
-$('rem-ct').addEventListener('change', () => saveReminder({ time: $('rem-ct').value }));
-
-// ── About: contact ──────────────────────────────────────────────────────────
-$('contact').addEventListener('submit', async () => {
-  const msg = $('c-msg').value.trim();
-  const email = $('c-email').value.trim();
-  if (!msg) return;
-  $('c-send').disabled = true;
   try {
-    await api('/api/feedback', { email, message: msg, type: 'general' });
-    $('c-msg').value = ''; $('c-email').value = '';
-    const ok = $('c-ok'); ok.textContent = 'Got it. Now sod off and have a day.'; ok.hidden = false;
+    const data = await api('/api/journal');
+    if (req !== journalReq) return;
+    journalCache = data;
+    renderJournal(data);
   } catch {
-    const ok = $('c-ok'); ok.textContent = "Didn't send — email hello@gratidude.ai instead."; ok.hidden = false;
+    if (req !== journalReq) return;
+    if (!journalCache) $('j-error').hidden = false;
+  } finally {
+    if (req === journalReq) $('j-loading').hidden = true;
   }
-  $('c-send').disabled = false;
-});
+}
+$('j-retry').addEventListener('click', loadJournal);
 
-// ── Contact / bug modal ─────────────────────────────────────────────────────
-function openContact(type) {
-  const bug = type === 'bug';
-  $('contact-title').textContent = bug ? 'Report a bug.' : 'Get in touch.';
-  $('contact-sub').textContent = bug ? 'What broke? Time to snitch.' : 'Something to say? Make it brief.';
-  $('cm-send').textContent = 'Send it'; $('cm-send').disabled = false;
-  $('cm-ok').hidden = true; $('cm-ok').textContent = '';
-  $('contact-modal').dataset.type = type;
+// ── Contact form: one component, mounted in About and the bug modal ─────────
+// Message is required; email is optional but must be valid if given.
+function mountContactForm(slot, type, { onSent } = {}) {
+  const form = $('contact-tpl').content.firstElementChild.cloneNode(true);
+  const email = form.elements.email;
+  const msg = form.elements.message;
+  const btn = form.querySelector('.btn');
+  const ok = form.querySelector('.ok');
+  form.querySelectorAll('label[data-for]').forEach((l) => {
+    const field = form.elements[l.dataset.for];
+    field.id = `${type}-${l.dataset.for}`;
+    l.htmlFor = field.id;
+  });
+
+  const valid = () => !!msg.value.trim() && (!email.value.trim() || EMAIL_RE.test(email.value.trim()));
+  const update = gate(btn, valid, [email, msg]);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!valid()) return;
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      await api('/api/feedback', { email: email.value.trim(), message: msg.value.trim(), type });
+      form.reset();
+      ok.textContent = 'Got it. Now sod off and have a day.';
+      onSent?.();
+    } catch {
+      ok.textContent = "Didn't send. Email hello@gratidude.ai instead.";
+    }
+    ok.hidden = false;
+    btn.textContent = 'Send it';
+    update();
+  });
+
+  slot.append(form);
+  return {
+    reset() { form.reset(); ok.hidden = true; btn.textContent = 'Send it'; update(); },
+    focus() { email.focus(); },
+  };
+}
+
+mountContactForm($('about-contact'), 'general');
+const bugForm = mountContactForm($('modal-contact'), 'bug', { onSent: () => setTimeout(closeContact, 1600) });
+
+function openContact() {
+  bugForm.reset();
   $('contact-modal').hidden = false;
-  $('cm-email').focus();
+  bugForm.focus();
 }
 function closeContact() { $('contact-modal').hidden = true; }
 $('contact-close').addEventListener('click', closeContact);
 $('contact-modal').addEventListener('click', (e) => { if (e.target === $('contact-modal')) closeContact(); });
-$('contact-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const message = $('cm-msg').value.trim();
-  if (!message) { $('cm-msg').focus(); return; }
-  $('cm-send').disabled = true; $('cm-send').textContent = 'Sending…';
-  try {
-    await api('/api/feedback', { email: $('cm-email').value.trim(), message, type: $('contact-modal').dataset.type });
-    $('cm-ok').textContent = 'Got it. Now sod off and have a day.'; $('cm-ok').hidden = false;
-    $('cm-msg').value = '';
-    setTimeout(closeContact, 1600);
-  } catch {
-    $('cm-ok').textContent = "Didn't send. Email hello@gratidude.ai instead.";
-    $('cm-ok').hidden = false;
-    $('cm-send').disabled = false; $('cm-send').textContent = 'Send it';
-  }
-});
 
 // ── Account / sign in ───────────────────────────────────────────────────────
 function paintLogin() {
@@ -328,12 +327,8 @@ function paintLogin() {
     $('login-in-head').textContent = 'Your account.';
   }
 }
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-$('email').addEventListener('input', () => {
-  $('signin-btn').disabled = !EMAIL_RE.test($('email').value.trim());
-  $('login-error').textContent = '';
-});
-$('signin-btn').disabled = true;
+const updateSignin = gate($('signin-btn'), () => EMAIL_RE.test($('email').value.trim()), [$('email')]);
+$('email').addEventListener('input', () => { $('login-error').textContent = ''; });
 $('signin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('email').value.trim();
@@ -341,7 +336,7 @@ $('signin').addEventListener('submit', async (e) => {
   const btn = $('signin-btn');
   btn.disabled = true; btn.textContent = 'Sending…';
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-  if (error) { $('login-error').textContent = "didn't send. try again."; btn.disabled = false; btn.textContent = 'Send me a link'; return; }
+  if (error) { $('login-error').textContent = "didn't send. try again."; btn.textContent = 'Send me a link'; updateSignin(); return; }
   $('sent-to').textContent = email;
   $('login-card').hidden = true;
   $('login-sent').hidden = false;
@@ -380,12 +375,16 @@ sb.auth.onAuthStateChange(async (event, session) => {
   $('login-in-head').textContent = "You're in.";
 });
 
+// Home is already painted with defaults by the time this lands (it can take
+// seconds on a cold start). Only repaint if the user is still on Home and the
+// real state flips it to done; never pull them off another screen or clear
+// what they're typing.
 async function boot() {
   let state = null;
   try { state = await api('/api/state'); } catch { /* fresh, offline, or brand new */ }
-  if (state) current = { ...current, ...state };
-  paintReminder();
-  show('home');
+  if (!state) return;
+  current = { ...current, ...state };
+  if ($('home').classList.contains('on') && current.doneToday && !editing) show('home');
 }
 
 async function init() {

@@ -16,6 +16,7 @@
 <!-- ══════════ HOME (writing / editing / done) ══════════ -->
 <section class="screen on" id="home">
   <div class="top">
+    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
     <span class="stamp" id="logged-stamp" hidden>Logged</span>
     <button class="menubtn" data-menu>MENU</button>
   </div>
@@ -57,6 +58,10 @@
     <p class="marker j-summary" id="j-summary" hidden></p>
     <div id="j-list"></div>
     <p class="marker" id="j-loading" hidden>Loading your entries…</p>
+    <div class="j-error" id="j-error" hidden>
+      <p class="marker">Couldn't load your entries.</p>
+      <button class="ghost" type="button" id="j-retry">Try again</button>
+    </div>
     <p class="marker" id="j-empty" hidden>Nothing on file. Your first three things go on the home screen.</p>
   </div>
 </section>
@@ -72,10 +77,18 @@
     <p class="lede">Put some stuff in place so you actually stick to it. I know how useless you are.</p>
 
     <section class="block">
-      <p class="marker sig">Daily reminder</p>
-      <div class="tog-row"><span>Daily reminder</span><button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-label="Daily reminder"></button></div>
-      <div class="times" id="rem-times"></div>
-      <div class="custom" id="rem-custom" hidden><label class="marker" for="rem-ct">Custom time</label><input id="rem-ct" type="time" value="20:00"></div>
+      <div class="tog-row">
+        <p class="marker sig" id="rem-label">Daily reminder</p>
+        <button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-labelledby="rem-label" disabled></button>
+      </div>
+      <div class="times off">
+        <button class="time" type="button" disabled>7:00 am</button>
+        <button class="time" type="button" disabled>12:00 pm</button>
+        <button class="time" type="button" disabled>6:00 pm</button>
+        <button class="time" type="button" disabled>8:00 pm</button>
+        <button class="time" type="button" disabled>9:30 pm</button>
+        <button class="time" type="button" disabled>Custom</button>
+      </div>
       <p class="note">One nudge a day, at the time you pick. Not wired up in the beta yet — this remembers your choice for when it is.</p>
     </section>
 
@@ -95,8 +108,8 @@
     <button class="menubtn" data-menu>MENU</button>
   </div>
   <div class="sheet">
-    <h1 class="command sm">Why this exists</h1>
-    <p class="lede">Most gratitude journals are boring. And you need discipline. Gratidude talks to you like a sarcastic drill instructor, so hopefully you keep coming back.</p>
+    <h1 class="command sm">About</h1>
+    <p class="lede"><b>Why this exists.</b> Most gratitude journals are boring. And you need discipline. Gratidude talks to you like a sarcastic drill instructor, so hopefully you keep coming back.</p>
 
     <section class="block">
       <p class="marker sig">FAQ</p>
@@ -119,12 +132,7 @@
     <section class="block" id="contact-section">
       <p class="marker sig">Get in touch</p>
       <p>Something broken, or an idea? Tell me. Briefly.</p>
-      <form id="contact" autocomplete="off" onsubmit="return false">
-        <div class="field"><label class="marker" for="c-email">Email</label><input id="c-email" type="email" placeholder="you@example.com"></div>
-        <div class="field"><label class="marker" for="c-msg">Message</label><textarea id="c-msg" rows="4" placeholder="go on then"></textarea></div>
-        <button class="btn" id="c-send" type="submit">Send it</button>
-        <span id="c-ok" class="note ok" hidden></span>
-      </form>
+      <div id="about-contact"></div>
     </section>
 
     <p class="marker version">Version 2.0 · web beta</p>
@@ -137,14 +145,14 @@
     <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
     <button class="menubtn" data-menu>MENU</button>
   </div>
-  <div class="authwrap">
+  <div class="sheet">
     <div class="authcard" id="login-card">
       <h1 class="command sm">Save your entries.</h1>
       <p class="marker">Enter your email — we'll send a link. No password.</p>
       <form id="signin" autocomplete="off">
         <div class="field"><label class="marker" for="email">Email</label><input id="email" type="email" placeholder="you@example.com" inputmode="email" required></div>
         <div class="field-error" id="login-error"></div>
-        <button class="btn" type="submit" id="signin-btn">Send me a link</button>
+        <button class="btn" type="submit" id="signin-btn" disabled>Send me a link</button>
       </form>
       <button class="ghost" type="button" data-go="home">I'll do it later</button>
     </div>
@@ -180,27 +188,32 @@
     <nav class="marker mfoot-links">
       <a href="#" data-go="about">About</a>
       <a href="#" data-go="about" data-anchor="contact-section">Contact</a>
-      <a href="#" data-contact="bug">Report a bug</a>
+      <a href="#" data-contact>Report a bug</a>
       <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
     </nav>
     <span class="marker">by <a href="https://danberg.art" target="_blank" rel="noopener">Dan Berg</a> · v2.0 web beta</span>
   </div>
 </div>
 
-<!-- ══════════ CONTACT / BUG MODAL ══════════ -->
+<!-- ══════════ REPORT A BUG MODAL ══════════ -->
 <div class="modal" id="contact-modal" hidden>
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="contact-title">
     <button class="menubtn" id="contact-close" type="button" aria-label="Close">CLOSE ✕</button>
-    <h2 class="command sm" id="contact-title">Get in touch.</h2>
-    <p class="marker" id="contact-sub">Something to say? Make it brief.</p>
-    <form id="contact-form" autocomplete="off">
-      <div class="field"><label class="marker" for="cm-email">Email</label><input id="cm-email" type="email" placeholder="you@example.com"></div>
-      <div class="field"><label class="marker" for="cm-msg">Message</label><textarea id="cm-msg" rows="4" placeholder="go on then"></textarea></div>
-      <button class="btn" type="submit" id="cm-send">Send it</button>
-      <p class="note ok" id="cm-ok" hidden></p>
-    </form>
+    <h2 class="command sm" id="contact-title">Report a bug.</h2>
+    <p class="marker">What broke? Time to snitch.</p>
+    <div id="modal-contact"></div>
   </div>
 </div>
+
+<!-- The one contact form, mounted into About and the bug modal by mountContactForm() -->
+<template id="contact-tpl">
+  <form class="cform" autocomplete="off" novalidate>
+    <div class="field"><label class="marker" data-for="email">Email</label><input name="email" type="email" placeholder="you@example.com" inputmode="email"></div>
+    <div class="field"><label class="marker" data-for="message">Message</label><textarea name="message" rows="4" placeholder="go on then"></textarea></div>
+    <button class="btn" type="submit" disabled>Send it</button>
+    <p class="note ok" role="status" hidden></p>
+  </form>
+</template>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>
