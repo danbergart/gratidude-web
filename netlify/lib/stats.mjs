@@ -1,13 +1,14 @@
-// Usage stats for the daily Telegram digest. Reads dates and ids only; never
-// the `items` column, so nobody's gratitudes are ever touched.
+// Usage stats for the Telegram digest. Reads dates and ids only; never the
+// `items` column, so nobody's gratitudes are ever touched.
 const DAY = 86400000;
 const iso = (d) => d.toISOString().slice(0, 10);
 export const addDays = (isoDate, n) => iso(new Date(Date.parse(`${isoDate}T00:00:00Z`) + n * DAY));
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 const pct = (n, d) =>(d ? `${n}/${d} (${Math.round((100 * n) / d)}%)` : 'not enough data yet');
 
-// rows: [{ user_id, anon_id, entry_date }]; today: 'YYYY-MM-DD' (UTC)
-export function summarise(rows, today) {
+// rows: [{ user_id, anon_id, entry_date }]; today: 'YYYY-MM-DD' (UTC).
+// windowDays: how many days this digest covers, i.e. how long since the last one.
+export function summarise(rows, today, windowDays = 1) {
   const byPerson = new Map();
   for (const r of rows) {
     const key = r.user_id ?? r.anon_id;
@@ -20,6 +21,7 @@ export function summarise(rows, today) {
   });
 
   const yesterday = addDays(today, -1);
+  const windowStart = addDays(today, -windowDays);
   const within = (p, from, to) => p.dates.some((d) => d >= from && d <= to);
 
   // "Came back in week 1": wrote again on days 2-7 after their first entry.
@@ -29,9 +31,10 @@ export function summarise(rows, today) {
   const sortedDays = people.map((p) => p.days).sort((a, b) => a - b);
 
   return {
-    yesterday: {
-      wrote: people.filter((p) => p.dates.includes(yesterday)).length,
-      firstTimers: people.filter((p) => p.first === yesterday).length,
+    recent: {
+      wrote: people.filter((p) => within(p, windowStart, yesterday)).length,
+      firstTimers: people.filter((p) => p.first >= windowStart && p.first <= yesterday).length,
+      entries: rows.filter((r) => r.entry_date >= windowStart && r.entry_date <= yesterday).length,
     },
     writers: people.length,
     writersWithAccount: people.filter((p) => p.account).length,
@@ -51,14 +54,14 @@ export function summarise(rows, today) {
   };
 }
 
-export function formatDigest(s, extra, today) {
+export function formatDigest(s, extra, today, windowDays = 1) {
   const date = new Date(`${today}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const b = s.buckets;
   return [
     `<b>Gratidude · ${date}</b>`,
     '',
-    '<b>Yesterday</b>',
-    `${s.yesterday.wrote} wrote their three (${s.yesterday.firstTimers} for the first time)`,
+    `<b>${windowDays === 1 ? 'Yesterday' : `Last ${windowDays} days`}</b>`,
+    `${s.recent.wrote} wrote their three (${s.recent.firstTimers} for the first time) · ${plural(s.recent.entries, 'entry', 'entries')} in total`,
     `${plural(extra.newVisitors, 'new visitor')} · ${plural(extra.newAccounts, 'new account')}`,
     '',
     '<b>All time</b>',
@@ -91,14 +94,14 @@ async function count(supabase, table, from, to) {
   return n ?? 0;
 }
 
-export async function buildDigest(supabase, now = new Date()) {
+export async function buildDigest(supabase, now = new Date(), windowDays = 1) {
   const today = iso(now);
-  const yesterday = addDays(today, -1);
+  const windowStart = addDays(today, -windowDays);
   const [rows, visitors, newVisitors, newAccounts] = await Promise.all([
     allEntryDates(supabase),
     count(supabase, 'anon_sessions'),
-    count(supabase, 'anon_sessions', yesterday, today),
-    count(supabase, 'web_users', yesterday, today),
+    count(supabase, 'anon_sessions', windowStart, today),
+    count(supabase, 'web_users', windowStart, today),
   ]);
-  return formatDigest(summarise(rows, today), { visitors, newVisitors, newAccounts }, today);
+  return formatDigest(summarise(rows, today, windowDays), { visitors, newVisitors, newAccounts }, today, windowDays);
 }
