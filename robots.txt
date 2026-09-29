@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# Supabase email template, not a page
+Disallow: /email-sign-in.html
+
+Sitemap: https://gratidude.ai/sitemap.xml

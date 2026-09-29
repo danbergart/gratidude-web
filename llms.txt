@@ -1,0 +1,14 @@
+# Gratidude
+
+> Gratidude is a no-nonsense gratitude journal on the web. Once a day you write three things you're grateful for. It talks to you like a sarcastic drill instructor, so the habit actually sticks.
+
+- Lives at https://gratidude.ai and works in any browser, on phone or desktop. Currently a public web beta.
+- No account needed to start. Add an email to save your entries across devices; sign-in is by emailed link, no password.
+- Private: entries are not shared or seen by anybody else.
+- No AI. Despite the .ai domain, Gratidude doesn't use AI, and your entries are never sent to one.
+- Built by Dan Berg, who knew gratitude was important but found other ways of doing it boring or too wafty.
+
+## Links
+
+- [Gratidude](https://gratidude.ai/): the journal itself. Write today's three things, see past entries, and read the About and FAQ.
+- [Dan Berg](https://danberg.art): the person who made it.
