@@ -3,220 +3,121 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Gratidude: The No-Nonsense Gratitude Journal.</title>
-  <meta name="description" content="Gratidude is a no-nonsense gratitude journal. Write three things you're grateful for each day — quick, private, and blunt enough that the habit actually sticks.">
+  <title>Gratidude: Coming soon.</title>
+  <meta name="description" content="Gratidude is an AI-powered gratitude journal for people who hate that sorta stuff. Coming soon. Sign up for the prelaunch.">
   <meta name="theme-color" content="#0B0B0B">
   <link rel="canonical" href="https://gratidude.ai/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;700&family=Archivo:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=JetBrains+Mono:wght@400&family=Archivo:wght@400&display=swap" rel="stylesheet">
+  <style>
+    /* Holding page. Same drill-sergeant look as the retired app (archive/public/style.css):
+       black ground, Oswald caps, one signal yellow, no radius, no shadows. */
+    :root {
+      --ink: #0B0B0B;
+      --bone: #F2F1EC;
+      --bone-faint: #8A8884;
+      --placeholder: #78766F;
+      --rule: #2A2A28;
+      --signal: #FFD400;
+      --display: 'Oswald', Impact, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --body: 'Archivo', Helvetica, Arial, sans-serif;
+      --track: .06em;
+      --pad-x: clamp(16px, 4vw, 64px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    body { background: var(--ink); color: var(--bone); font-family: var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+
+    main {
+      min-height: 100vh; min-height: 100svh;
+      display: flex; flex-direction: column;
+      padding: clamp(14px, 4vw, 46px) var(--pad-x) calc(clamp(40px, 6vw, 64px) + env(safe-area-inset-bottom));
+    }
+    .wordmark { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 17px; }
+
+    .core {
+      flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+      gap: clamp(28px, 4vw, 48px); padding: clamp(24px, 5vh, 64px) 0; max-width: 1400px;
+    }
+    h1 {
+      font-family: var(--display); font-weight: 700; text-transform: uppercase;
+      line-height: .94; letter-spacing: -.005em; font-size: clamp(36px, 5.6vw, 88px);
+      max-width: 20ch; text-wrap: balance;
+    }
+    h1 .dim { color: var(--bone-faint); }
+    .stamp {
+      font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      font-size: clamp(14px, 1.3vw, 18px); color: var(--signal);
+      box-shadow: inset 0 0 0 2px var(--signal); padding: 8px 14px; transform: rotate(-3deg);
+    }
+
+    form { width: 100%; max-width: 640px; }
+    .signup { display: flex; flex-wrap: wrap; gap: 12px; }
+    .signup input {
+      flex: 1 1 240px; min-width: 0; background: none; border: 1px solid var(--rule); border-radius: 0;
+      color: var(--bone); font-family: var(--body); font-size: 16px; padding: 14px; outline: none;
+    }
+    .signup input:focus { border-color: var(--signal); }
+    .signup input::placeholder { color: var(--placeholder); opacity: 1; }
+    .btn {
+      flex: 0 0 auto; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      font-size: clamp(15px, 1.3vw, 18px); background: var(--signal); color: var(--ink); border: 0; border-radius: 0;
+      padding: 14px clamp(20px, 2.4vw, 32px); cursor: pointer; transition: transform .08s steps(2);
+    }
+    .btn:active { transform: translateY(2px); }
+    .btn:disabled { opacity: .5; cursor: default; transform: none; }
+    .status { font-family: var(--mono); font-size: 14px; letter-spacing: var(--track); text-transform: uppercase; color: var(--bone-faint); margin-top: 14px; }
+    .status.ok { color: var(--signal); margin-top: 0; }
+    @media (max-width: 520px) { .btn { flex: 1 1 100%; } }
+  </style>
 </head>
 <body>
-
-<!-- ══════════ HOME (writing / editing / done) ══════════ -->
-<section class="screen on" id="home">
-  <div class="top">
-    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
-    <span class="stamp" id="logged-stamp" hidden>Logged</span>
-    <button class="menubtn" data-menu>MENU</button>
-  </div>
+<main>
+  <span class="wordmark">Gratidude</span>
   <div class="core">
-    <h1 class="command" id="cmd"></h1>
+    <h1>Gratidude is an AI-powered gratitude journal <span class="dim">for people who hate that sorta stuff.</span></h1>
+    <p class="stamp">Coming soon.</p>
 
-    <form class="fields" id="form" autocomplete="off" hidden>
-      <label class="row"><span class="n">01</span><input id="g1" type="text" autocomplete="off"></label>
-      <label class="row"><span class="n">02</span><input id="g2" type="text" autocomplete="off"></label>
-      <label class="row"><span class="n">03</span><input id="g3" type="text" autocomplete="off"></label>
+    <!-- Netlify Forms: sign-ups land in the Netlify dashboard under Forms → prelaunch. -->
+    <form name="prelaunch" method="POST" data-netlify="true" netlify-honeypot="company" id="signup">
+      <input type="hidden" name="form-name" value="prelaunch">
+      <p hidden><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+      <div class="signup">
+        <input name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email" aria-label="Email">
+        <button class="btn" type="submit">Sign up for the prelaunch</button>
+      </div>
+      <p class="status" role="status" hidden></p>
     </form>
-    <div class="actions" id="write-actions" hidden>
-      <button class="btn" id="submit" disabled>Submit</button>
-      <span class="micro" id="privacy-micro">Private. No account needed.</span>
-    </div>
-
-    <div class="fields" id="done-fields" hidden></div>
-    <div class="actions" id="done-actions" hidden>
-      <span class="command payoff-sub">Come back tomorrow, worm.</span>
-      <button class="ghost" data-edit>Change today's three</button>
-    </div>
   </div>
-  <div class="foot">
-    <p class="save-nudge" id="save-nudge" hidden>
-      <button class="ghost" data-go="login">Save your gratitudes. Add your email →</button>
-    </p>
-    <p class="tagline"><span class="tag-long">Gratidude, a</span><span class="tag-short">A</span> gratitude journal for <span class="who" id="who" aria-live="off">dudes.</span></p>
-  </div>
-</section>
+</main>
 
-<!-- ══════════ JOURNAL ══════════ -->
-<section class="screen" id="journal">
-  <div class="top">
-    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
-    <button class="menubtn" data-menu>MENU</button>
-  </div>
-  <div class="sheet">
-    <h1 class="command sm">Journal</h1>
-    <p class="marker j-summary" id="j-summary" hidden></p>
-    <div id="j-list"></div>
-    <p class="marker" id="j-loading" hidden>Loading your entries…</p>
-    <div class="j-error" id="j-error" hidden>
-      <p class="marker">Couldn't load your entries.</p>
-      <button class="ghost" type="button" id="j-retry">Try again</button>
-    </div>
-    <p class="marker" id="j-empty" hidden>Nothing on file. Your first three things go on the home screen.</p>
-  </div>
-</section>
-
-<!-- ══════════ BUILD THE HABIT ══════════ -->
-<section class="screen" id="habit">
-  <div class="top">
-    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
-    <button class="menubtn" data-menu>MENU</button>
-  </div>
-  <div class="sheet">
-    <h1 class="command sm">Build the habit</h1>
-    <p class="lede">Put some stuff in place so you actually stick to it. I know how useless you are.</p>
-
-    <section class="block">
-      <div class="tog-row">
-        <p class="marker sig" id="rem-label">Daily reminder</p>
-        <button class="sw" id="rem-sw" role="switch" aria-checked="false" aria-labelledby="rem-label" disabled></button>
-      </div>
-      <div class="times off">
-        <button class="time" type="button" disabled>7:00 am</button>
-        <button class="time" type="button" disabled>12:00 pm</button>
-        <button class="time" type="button" disabled>6:00 pm</button>
-        <button class="time" type="button" disabled>8:00 pm</button>
-        <button class="time" type="button" disabled>9:30 pm</button>
-        <button class="time" type="button" disabled>Custom</button>
-      </div>
-      <p class="note">One nudge a day, at the time you pick. Not wired up in the beta yet — this remembers your choice for when it is.</p>
-    </section>
-
-    <section class="block">
-      <p class="marker sig">Make it unavoidable</p>
-      <p>Set Gratidude as your homepage, or stick it on your phone's home screen. Either way, it's the first thing you see — not something you have to remember to open.</p>
-      <p class="note"><b>On desktop:</b> open your browser settings, find "Homepage" or "On startup", and paste <b>gratidude.ai</b>.</p>
-      <p class="note"><b>On phone:</b> open <b>gratidude.ai</b>, tap Share, then "Add to Home Screen".</p>
-    </section>
-  </div>
-</section>
-
-<!-- ══════════ ABOUT ══════════ -->
-<section class="screen" id="about">
-  <div class="top">
-    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
-    <button class="menubtn" data-menu>MENU</button>
-  </div>
-  <div class="sheet">
-    <h1 class="command sm">About</h1>
-    <p class="lede">Most gratitude journals are boring, and <em>you</em> need discipline. Gratidude talks to you like a sarcastic drill instructor, so you keep coming back.</p>
-
-    <section class="block">
-      <p class="marker sig">FAQ</p>
-      <div class="faq">
-        <details class="faq-item">
-          <summary>Who built this?</summary>
-          <p>Gratidude was built by <a href="https://danberg.art" target="_blank" rel="noopener">Dan Berg</a>, who knew gratitude was important but found other ways of doing it boring or too wafty.</p>
-        </details>
-        <details class="faq-item">
-          <summary>Are my gratitudes private?</summary>
-          <p>Yes, 100%. They are not shared or seen by anybody else.</p>
-        </details>
-        <details class="faq-item">
-          <summary>Where is the AI?</summary>
-          <p>There is no AI. But if you want to be successful these days, you've got to put it in the name.</p>
-        </details>
-      </div>
-    </section>
-
-    <section class="block" id="contact-section">
-      <p class="marker sig">Get in touch</p>
-      <p>Something broken, or an idea? Tell me. Briefly.</p>
-      <div id="about-contact"></div>
-    </section>
-
-    <p class="marker version">Version 2.0 · web beta</p>
-  </div>
-</section>
-
-<!-- ══════════ ACCOUNT / SIGN IN ══════════ -->
-<section class="screen" id="login">
-  <div class="top">
-    <button class="wordmark" type="button" data-go="home">GRATIDUDE</button>
-    <button class="menubtn" data-menu>MENU</button>
-  </div>
-  <div class="sheet">
-    <div class="authcard" id="login-card">
-      <h1 class="command sm">Save your entries.</h1>
-      <p class="marker">Enter your email — we'll send a link. No password.</p>
-      <form id="signin" autocomplete="off">
-        <div class="field"><label class="marker" for="email">Email</label><input id="email" type="email" placeholder="you@example.com" inputmode="email" required></div>
-        <div class="field-error" id="login-error"></div>
-        <button class="btn" type="submit" id="signin-btn" disabled>Send me a link</button>
-      </form>
-      <button class="ghost" type="button" data-go="home">I'll do it later</button>
-    </div>
-
-    <div class="authcard" id="login-sent" hidden>
-      <h1 class="command sm">Check your email.</h1>
-      <p class="marker">Tap the link and you're in.</p>
-      <p class="note">Sent a sign-in link to <b id="sent-to"></b>. It keeps everything you've written so far.</p>
-    </div>
-
-    <div class="authcard" id="login-in" hidden>
-      <h1 class="command sm" id="login-in-head">You're in.</h1>
-      <p class="marker">Your journal is saved.</p>
-      <p class="note">Signed in as <b id="account-email"></b>. Everything you write now syncs to this account.</p>
-      <div class="authactions">
-        <button class="btn" type="button" data-go="home">Go to today</button>
-        <button class="ghost" type="button" id="signout-btn">Sign out</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════ MENU TAKEOVER ══════════ -->
-<div id="menu" role="dialog" aria-modal="true" aria-label="Menu">
-  <div class="top"><button class="menubtn" data-menu>CLOSE ✕</button></div>
-  <nav class="mlinks">
-    <a href="#" data-go="journal">Journal</a>
-    <a href="#" data-go="habit">Build the habit</a>
-    <a href="#" data-go="about">About</a>
-    <a href="#" data-go="login">Account</a>
-  </nav>
-  <div class="mfoot">
-    <nav class="marker mfoot-links">
-      <a href="#" data-go="about">About</a>
-      <a href="#" data-go="about" data-anchor="contact-section">Contact</a>
-      <a href="#" data-contact>Report a bug</a>
-      <a href="https://pointlessmeeting.com" target="_blank" rel="noopener">pointlessmeeting.com</a>
-    </nav>
-    <span class="marker">by <a href="https://danberg.art" target="_blank" rel="noopener">Dan Berg</a> · v2.0 web beta</span>
-  </div>
-</div>
-
-<!-- ══════════ REPORT A BUG MODAL ══════════ -->
-<div class="modal" id="contact-modal" hidden>
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="contact-title">
-    <button class="menubtn" id="contact-close" type="button" aria-label="Close">CLOSE ✕</button>
-    <h2 class="command sm" id="contact-title">Report a bug.</h2>
-    <p class="marker">What broke? Time to snitch.</p>
-    <div id="modal-contact"></div>
-  </div>
-</div>
-
-<!-- The one contact form, mounted into About and the bug modal by mountContactForm() -->
-<template id="contact-tpl">
-  <form class="cform" autocomplete="off" novalidate>
-    <div class="field"><label class="marker" data-for="email">Email</label><input name="email" type="email" placeholder="you@example.com" inputmode="email"></div>
-    <div class="field"><label class="marker" data-for="message">Message</label><textarea name="message" rows="4" placeholder="go on then"></textarea></div>
-    <button class="btn" type="submit" disabled>Send it</button>
-    <p class="note ok" role="status" hidden></p>
-  </form>
-</template>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="app.js"></script>
+<script>
+  // Submit in place so people stay on the page. Without JS the form still posts to Netlify normally.
+  const form = document.getElementById('signup');
+  const status = form.querySelector('.status');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(form)).toString(),
+      });
+      if (!res.ok) throw new Error(res.status);
+      form.querySelector('.signup').hidden = true;
+      status.textContent = "You're on the list.";
+      status.classList.add('ok');
+    } catch {
+      status.textContent = "That didn't go through. Try again.";
+      btn.disabled = false;
+    }
+    status.hidden = false;
+  });
+</script>
 </body>
 </html>
